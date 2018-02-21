@@ -6,7 +6,8 @@ let Characteristic, Service;
 
 const RetrieveBatteryLevelTask = require('./ble/RetrieveBatteryLevelTask');
 
-const RetrieveFlowerPowerDataTask = require('./parrot/RetrieveFlowerPowerDataTask');
+// const RetrieveFlowerPowerDataTask = require('./parrot/RetrieveFlowerPowerDataTask');
+const RetrieveFlowerPowerCalibratedDataTask = require('./parrot/RetrieveFlowerPowerCalibratedDataTask');
 const WriteLedStateTask = require('./parrot/WriteLedStateTask');
 
 class FlowerPowerSensor {
@@ -159,7 +160,7 @@ class FlowerPowerSensor {
 
   async _retrieveFlowerPowerData() {
     try {
-      const task = new RetrieveFlowerPowerDataTask();
+      const task = new RetrieveFlowerPowerCalibratedDataTask();
       const status = await this._executor.execute(task);
       this.log(`Retrieved data: ${util.inspect(status)}`);
 
