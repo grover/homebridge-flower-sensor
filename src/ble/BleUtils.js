@@ -32,43 +32,53 @@ function discoverCharacteristics(service, characteristics) {
   });
 }
 
-function readCharacteristic(characteristic) {
-  // TODO: Use a timeout!
+function createTimeoutPromise(timeout) {
   return new Promise((resolve, reject) => {
-    debug(`Reading ${characteristic.uuid}`);
-    characteristic.read((error, data) => {
-      if (error) {
-        debug(`Failed to read characteristic: ${characteristic.uuid}, error ${util.inspect(error)}`);
-        reject(error);
-        return;
-      }
-
-      debug(`Retrieved ${characteristic.uuid}: ${util.inspect(data)}`);
-      resolve(data);
-    });
+    setTimeout(() => reject(new Error('Request timed out.')), timeout);
   });
 }
 
+function readCharacteristic(characteristic) {
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      debug(`Reading ${characteristic.uuid}`);
+      characteristic.read((error, data) => {
+        if (error) {
+          debug(`Failed to read characteristic: ${characteristic.uuid}, error ${util.inspect(error)}`);
+          reject(error);
+          return;
+        }
+
+        debug(`Retrieved ${characteristic.uuid}: ${util.inspect(data)}`);
+        resolve(data);
+      });
+    }),
+    createTimeoutPromise(3000)
+  ]);
+}
+
 function writeCharacteristic(characteristic, value) {
-  // TODO: Use a timeout!
-  return new Promise((resolve, reject) => {
-    debug(`Writing ${value} to ${characteristic.uuid}`);
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      debug(`Writing ${value} to ${characteristic.uuid}`);
 
-    const withoutResponse =
-      (characteristic.properties.indexOf('writeWithoutResponse') !== -1)
-      && (characteristic.properties.indexOf('write') === -1);
+      const withoutResponse =
+        (characteristic.properties.indexOf('writeWithoutResponse') !== -1)
+        && (characteristic.properties.indexOf('write') === -1);
 
-    characteristic.write(value, withoutResponse, (error) => {
-      if (error) {
-        debug(`Failed to read characteristic: ${characteristic.uuid}, error ${util.inspect(error)}`);
-        reject(error);
-        return;
-      }
+      characteristic.write(value, withoutResponse, (error) => {
+        if (error) {
+          debug(`Failed to read characteristic: ${characteristic.uuid}, error ${util.inspect(error)}`);
+          reject(error);
+          return;
+        }
 
-      debug(`Written ${characteristic.uuid}`);
-      resolve();
-    });
-  });
+        debug(`Written ${characteristic.uuid}`);
+        resolve();
+      });
+    }),
+    createTimeoutPromise(3000)
+  ]);
 }
 
 async function readString(characteristic) {
