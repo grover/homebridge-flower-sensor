@@ -1,6 +1,7 @@
 'use strict';
 
 const util = require('util');
+const EventEmitter = require('events').EventEmitter;
 
 const RetrieveFlowerPowerCalibratedDataTask = require('../parrot/RetrieveFlowerPowerCalibratedDataTask');
 
@@ -12,9 +13,11 @@ let CurrentAmbientLightLevel, CurrentRelativeHumidity, CurrentTemperature;
  */
 const PLANT_DATA_REFRESH_INTERVAL = 10 * 60 * 1000;
 
-class PlantService {
+class PlantService extends EventEmitter {
 
   constructor(log, api, name, executor) {
+    super();
+
     this.log = log;
     this.name = name;
     this._executor = executor;
@@ -63,6 +66,8 @@ class PlantService {
       this._humiditySensor
         .getCharacteristic(CurrentRelativeHumidity)
         .updateValue(calibratedData.soilMoisture);
+
+      this.emit('updated');
     }
     catch (e) {
       this.log(`Failed to retrieve the flower power data. Error: ${util.inspect(e)}`);

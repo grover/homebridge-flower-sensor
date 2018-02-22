@@ -10,6 +10,7 @@ const WriteLedStateTask = require('./parrot/WriteLedStateTask');
 
 const BatteryService = require('./services/BatteryService');
 const PlantService = require('./services/PlantService');
+const StatusService = require('./services/StatusService');
 
 class FlowerPowerSensor {
   constructor(api, log, config, executor, peripheral) {
@@ -44,7 +45,8 @@ class FlowerPowerSensor {
       this._createAccessoryInformationService(),
       this._createBridgingStateService(),
       ...this._createBatteryService(),
-      ...this._createPlantService()
+      ...this._createPlantService(),
+      ...this._createStatusService()
     ];
   }
 
@@ -95,7 +97,15 @@ class FlowerPowerSensor {
 
   _createPlantService() {
     this._plantService = new PlantService(this.log, this.api, this.name, this._executor);
+    this._plantService
+      .on('updated', this._onPlantDataUpdated.bind(this));
+
     return this._plantService.getServices();
+  }
+
+  _createStatusService() {
+    this._statusService = new StatusService(this.log, this.api, this.name, this._executor);
+    return this._statusService.getServices();
   }
 
   getServices() {
@@ -120,6 +130,10 @@ class FlowerPowerSensor {
       .catch(e => {
         this.log(`Failed to disable the LED: ${util.inspect(e)}`);
       });
+  }
+
+  _onPlantDataUpdated() {
+    this._statusService.setLastUpdated();
   }
 }
 
