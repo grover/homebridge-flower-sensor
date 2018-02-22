@@ -1,4 +1,4 @@
-# macOS
+# Installation on macOS
 
 This plugin was developed on a Mac and could also be run with Homebridge on a Mac. I haven't tried running it on one for a longer period of time though.
 

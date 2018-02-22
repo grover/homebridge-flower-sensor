@@ -25,7 +25,7 @@ There're more capabilities planned for the future.
 
 To use this plugin I recommend a [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/). You can monitor multiple Flower Power devices in one homebridge.
 
-* [Install on a Raspberry Pi](docs/install.md)
+* [Install on a Raspberry Pi](docs/raspberrypi.md)
 * [Install on a Mac](docs/macos.md)
 * [Add Flower Power sensors to HomeKit](docs/configure.md)
 
