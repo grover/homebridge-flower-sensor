@@ -17,6 +17,7 @@ This plugin exposes the following capabilities of the Flower Power sensor to Hom
 * Soil Moisture
 * Ambient Light Level
 * Identifying the sensor flashes the built-in LED
+* Monitor the battery status of the Flower Power sensor
 
 There're more capabilities planned for the future.
 
