@@ -1,5 +1,6 @@
 
 const version = require('../package.json').version;
+const util = require('util');
 
 const noble = require('noble');
 
@@ -44,17 +45,9 @@ const FlowerSensorPlatform = class {
 
     this._bleBrowser = new BleBrowser(this.log, noble);
     this._bleBrowser.on('discovered', this._onBleDeviceDiscovered.bind(this));
+    this._bleBrowser.start();
 
-    // this._createAccessories();
-
-    noble.on('stateChange', this._onNobleStateChanged.bind(this));
     this.api.on('didFinishLaunching', this._didFinishLaunching.bind(this));
-  }
-
-  _onNobleStateChanged(state) {
-    if (state === 'poweredOn' && this._accessoriesCallback) {
-      this._bleBrowser.start();
-    }
   }
 
   _createAccessories() {
@@ -71,7 +64,7 @@ const FlowerSensorPlatform = class {
 
   accessories(callback) {
     this._accessoriesCallback = callback;
-    this._bleBrowser.start();
+    this._tryToPublish();
   }
 
   async _onBleDeviceDiscovered(peripheral) {
@@ -79,19 +72,55 @@ const FlowerSensorPlatform = class {
       return;
     }
 
-    this.log(`Found flower power sensor "${peripheral.advertisement.localName}".`);
-    const sensorConfig = this.config.sensors.find(cfg => cfg.id === peripheral.advertisement.localName);
-    if (sensorConfig === undefined) {
-      return;
-    }
+    this.log(`Found flower power sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
+    const accessory = this._devices[peripheral.id];
+    if (accessory === undefined) {
+      this._devices[peripheral.id] = null;
 
+      const sensorConfig = this._findConfigurationForPeripheral(peripheral.advertisement.localName);
+      if (sensorConfig) {
+        this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
+        const accessory = await this._createAccessory(peripheral, sensorConfig);
+
+        this._devices[peripheral.id] = accessory;
+        this._accessories.push(accessory);
+
+        this._tryToPublish();
+      }
+    }
+    else if (accessory !== null) {
+      accessory.newAdvertisement(peripheral.advertisement);
+    }
+  }
+
+  _findConfigurationForPeripheral(name) {
+    return this.config.sensors.find(cfg => cfg.id === name);
+  }
+
+  async _createAccessory(peripheral, sensorConfig) {
     const executor = new BleExecutor(peripheral);
     sensorConfig.accessoryInformation = await executor.execute(new RetrieveDeviceInformationTask());
+    return new FlowerPowerSensor(this.api, this.log, sensorConfig, executor, peripheral);
+  }
 
-    this._accessories = [
-      new FlowerPowerSensor(this.api, this.log, sensorConfig, executor)
-    ];
+  async _tryToPublish() {
+    const allFound = this._allDevicesFound();
+    if (allFound) {
+      this._publishAccessories();
+    }
+    else {
+      this.log('Not all accessories have their devices. Not publishing yet.');
+    }
+  }
 
-    this._accessoriesCallback(this._accessories);
+  _allDevicesFound() {
+    return this._accessories.length === this.config.sensors.length;
+  }
+
+  _publishAccessories() {
+    if (this._accessoriesCallback) {
+      this._accessoriesCallback(this._accessories);
+      this._accessoriesCallback = undefined;
+    }
   }
 };

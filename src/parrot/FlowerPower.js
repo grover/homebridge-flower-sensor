@@ -23,7 +23,7 @@ const FlowerPowerColor = [
   'Gray Blue'
 ];
 
-function getFlowerPowerDeviceInformation(manufacturerData) {
+function getDeviceInformation(manufacturerData) {
   const deviceInfo = {
     generation: 1,
     type: 'Flower Power',
@@ -64,12 +64,12 @@ function getDeviceStatus(manufacturerData) {
   };
 
   if (manufacturerData.length == 5) {
-    deviceStatus.unreadEntries = manufacturerData[4] & UNREAD_ENTRIES_MASK == UNREAD_ENTRIES_MASK;
-    deviceStatus.moved = manufacturerData[4] & DEVICE_MOVED_MASK == DEVICE_MOVED_MASK;
-    deviceStatus.started = manufacturerData[4] & DEVICE_STARTED_MASK == DEVICE_STARTED_MASK;
-    deviceStatus.lowWater = manufacturerData[4] & DEVICE_LOW_WATER_MASK == DEVICE_LOW_WATER_MASK;
-    deviceStatus.lowBattery = manufacturerData[4] & DEVICE_LOW_BATTERY_MASK == DEVICE_LOW_BATTERY_MASK;
-    deviceStatus.wateringNeeded = manufacturerData[4] & DEVICE_WATERING_NEEDED_MASK == DEVICE_WATERING_NEEDED_MASK;
+    deviceStatus.unreadEntries = (manufacturerData[4] & UNREAD_ENTRIES_MASK) === UNREAD_ENTRIES_MASK;
+    deviceStatus.moved = (manufacturerData[4] & DEVICE_MOVED_MASK) === DEVICE_MOVED_MASK;
+    deviceStatus.started = (manufacturerData[4] & DEVICE_STARTED_MASK) === DEVICE_STARTED_MASK;
+    deviceStatus.lowWater = (manufacturerData[4] & DEVICE_LOW_WATER_MASK) === DEVICE_LOW_WATER_MASK;
+    deviceStatus.lowBattery = (manufacturerData[4] & DEVICE_LOW_BATTERY_MASK) === DEVICE_LOW_BATTERY_MASK;
+    deviceStatus.wateringNeeded = (manufacturerData[4] & DEVICE_WATERING_NEEDED_MASK) === DEVICE_WATERING_NEEDED_MASK;
   }
   else {
     // TODO: Gen. 1 device?
@@ -80,6 +80,6 @@ function getDeviceStatus(manufacturerData) {
 
 module.exports = {
   isFlowerPowerAdvertisement: isFlowerPowerAdvertisement,
-  getFlowerPowerDeviceInformation: getFlowerPowerDeviceInformation,
+  getDeviceInformation: getDeviceInformation,
   getDeviceStatus: getDeviceStatus
 };

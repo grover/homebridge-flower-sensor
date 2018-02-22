@@ -10,8 +10,8 @@ class BleBrowser extends EventEmitter {
     this.log = log;
     this.noble = noble;
     this._isScanning = false;
-    this._peripherals = {};
 
+    this.noble.on('stateChange', this._onNobleStateChanged.bind(this));
     this.noble.on('discover', this._onBleDeviceDiscovered.bind(this));
     this.noble.on('scanStop', this._onScanStopped.bind(this));
   }
@@ -25,35 +25,26 @@ class BleBrowser extends EventEmitter {
   }
 
   _scan() {
-    this.noble.startScanning([], false);
+    if (this.noble.state === 'poweredOn') {
+      this.noble.startScanning([], true);
+    }
   }
 
   stop() {
     if (this._isScanning) {
       this.log('Stopped to scan for BLE HomeKit accessories');
       this.noble.stopScanning();
-      this._peripherals = {};
+    }
+  }
+
+  _onNobleStateChanged(state) {
+    if (state === 'poweredOn' && this._isScanning) {
+      this._scan();
     }
   }
 
   _onBleDeviceDiscovered(peripheral) {
-    const p = this._peripherals[peripheral.id];
-    if (p === undefined) {
-      this._peripherals[peripheral.id] = peripheral;
-      this.emit('discovered', peripheral);
-    }
-
-
-    // if (peripheral.advertisement.manufacturerData) {
-    //   const data = ManufacturerDataParser(peripheral.advertisement.manufacturerData);
-    //   if (data.isHAP) {
-    //     if (this._ensureMacAddressIsAvailable(peripheral)) {
-    //       if (this._updateDevice(peripheral, data) === false) {
-    //         this._addDevice(peripheral, data);
-    //       }
-    //     }
-    //   }
-    // }
+    this.emit('discovered', peripheral);
   }
 
   _onScanStopped() {

@@ -4,41 +4,47 @@ const util = require('util');
 
 let Characteristic, Service;
 
-const RetrieveBatteryLevelTask = require('./ble/RetrieveBatteryLevelTask');
+const FlowerPower = require('./parrot/FlowerPower');
 
-// const RetrieveFlowerPowerDataTask = require('./parrot/RetrieveFlowerPowerDataTask');
-const RetrieveFlowerPowerCalibratedDataTask = require('./parrot/RetrieveFlowerPowerCalibratedDataTask');
 const WriteLedStateTask = require('./parrot/WriteLedStateTask');
 
+const BatteryService = require('./services/BatteryService');
+const PlantService = require('./services/PlantService');
+
 class FlowerPowerSensor {
-  constructor(api, log, config, executor) {
+  constructor(api, log, config, executor, peripheral) {
     Characteristic = api.hap.Characteristic;
     Service = api.hap.Service;
 
+    this.api = api;
     this.log = log;
     this.name = config.name;
+    this.displayName = this.name;
 
     this._config = config;
     this._executor = executor;
+    this._peripheral = peripheral;
+    this._deviceInfo = FlowerPower.getDeviceInformation(peripheral.advertisement.manufacturerData);
 
     this._services = this._createServices();
 
-    // Once per day?
-    this._retrieveBatteryLevel();
+    this.newAdvertisement(peripheral.advertisement);
+  }
 
-    // Once every 10mins for FakegatoHistory
-    this._retrieveFlowerPowerData();
+  newAdvertisement(advertisement) {
+    this.log(`Advertisement changed? old=${util.inspect(this._peripheral.advertisement.manufacturerData)}, new=${util.inspect(advertisement.manufacturerData)}`);
+
+    const deviceStatus = FlowerPower.getDeviceStatus(advertisement.manufacturerData);
+    this._batteryService.newAdvertisement(deviceStatus);
+    this._plantService.newAdvertisement(deviceStatus);
   }
 
   _createServices() {
     return [
       this._createAccessoryInformationService(),
       this._createBridgingStateService(),
-      this._createBatteryService(),
-      this._createLightSensor(),
-      this._createAirTemperatureSensor(),
-      this._createHumiditySensor(),
-      this._createSoilTemperatureSensor()
+      ...this._createBatteryService(),
+      ...this._createPlantService()
     ];
   }
 
@@ -53,7 +59,7 @@ class FlowerPowerSensor {
     this._accessoryInformation
       .setCharacteristic(Characteristic.Name, info.name)
       .setCharacteristic(Characteristic.Manufacturer, info.manufacturer)
-      .setCharacteristic(Characteristic.Model, info.model)
+      .setCharacteristic(Characteristic.Model, this._deviceInfo.type)
       .setCharacteristic(Characteristic.SerialNumber, info.serial)
       .setCharacteristic(Characteristic.FirmwareRevision, firmwareVersion)
       .setCharacteristic(Characteristic.HardwareRevision, hardwareVersion);
@@ -83,32 +89,13 @@ class FlowerPowerSensor {
   }
 
   _createBatteryService() {
-    this._batteryService = new Service.BatteryService();
-    this._batteryService
-      .getCharacteristic(Characteristic.ChargingState)
-      .updateValue(Characteristic.ChargingState.NOT_CHARGEABLE);
-
-    return this._batteryService;
+    this._batteryService = new BatteryService(this.log, this.api, this._executor);
+    return this._batteryService.getServices();
   }
 
-  _createLightSensor() {
-    this._lightSensor = new Service.LightSensor(this.name);
-    return this._lightSensor;
-  }
-
-  _createHumiditySensor() {
-    this._humiditySensor = new Service.HumiditySensor(this.name);
-    return this._humiditySensor;
-  }
-
-  _createAirTemperatureSensor() {
-    this._airTemperatureSensor = new Service.TemperatureSensor(`${this.name} Air`, 'air');
-    return this._airTemperatureSensor;
-  }
-
-  _createSoilTemperatureSensor() {
-    this._soilTemperatureSensor = new Service.TemperatureSensor(`${this.name} Soil`, 'soil');
-    return this._soilTemperatureSensor;
+  _createPlantService() {
+    this._plantService = new PlantService(this.log, this.api, this.name, this._executor);
+    return this._plantService.getServices();
   }
 
   getServices() {
@@ -125,7 +112,6 @@ class FlowerPowerSensor {
         setTimeout(() => this._disableLED(), 5000);
       })
       .catch(e => callback(e));
-
   }
 
   _disableLED() {
@@ -134,55 +120,6 @@ class FlowerPowerSensor {
       .catch(e => {
         this.log(`Failed to disable the LED: ${util.inspect(e)}`);
       });
-  }
-
-  async _retrieveBatteryLevel() {
-    try {
-      const status = await this._executor.execute(new RetrieveBatteryLevelTask());
-      this.log(`Retrieved battery status: ${util.inspect(status)}`);
-
-      this._batteryService
-        .getCharacteristic(Characteristic.BatteryLevel)
-        .updateValue(status.level);
-
-      const isLow = status.level < 15
-        ? Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW
-        : Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
-
-      this._batteryService
-        .getCharacteristic(Characteristic.StatusLowBattery)
-        .updateValue(isLow);
-    }
-    catch (e) {
-      this.log(`Failed to retrieve the battery levels. Error: ${util.inspect(e)}`);
-    }
-  }
-
-  async _retrieveFlowerPowerData() {
-    try {
-      const task = new RetrieveFlowerPowerCalibratedDataTask();
-      const status = await this._executor.execute(task);
-      this.log(`Retrieved data: ${util.inspect(status)}`);
-
-      this._lightSensor
-        .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
-        .updateValue(status.lightLevel);
-
-      this._soilTemperatureSensor
-        .getCharacteristic(Characteristic.CurrentTemperature)
-        .updateValue(status.soilTemperature);
-
-      this._airTemperatureSensor
-        .getCharacteristic(Characteristic.CurrentTemperature)
-        .updateValue(status.airTemperature);
-
-      this._humiditySensor
-        .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-        .updateValue(status.soilMoisture);
-    }
-    catch (e) {
-      this.log(`Failed to retrieve the flower power data. Error: ${util.inspect(e)}`);
-    }
   }
 }
 
