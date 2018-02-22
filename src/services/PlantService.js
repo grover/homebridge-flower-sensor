@@ -7,10 +7,10 @@ const RetrieveFlowerPowerCalibratedDataTask = require('../parrot/RetrieveFlowerP
 let CurrentAmbientLightLevel, CurrentRelativeHumidity, CurrentTemperature;
 
 /** 
- * Refresh the plant data once per hour. Given that it lasts 180 days, this
+ * Refresh the plant data every 10 minutes. Given that it lasts 180 days, this
  * should be plenty sufficient to take care of early warnings.
  */
-const PLANT_DATA_REFRESH_INTERVAL = 60 * 60 * 1000;
+const PLANT_DATA_REFRESH_INTERVAL = 10 * 60 * 1000;
 
 class PlantService {
 
@@ -41,7 +41,7 @@ class PlantService {
 
   newAdvertisement(deviceStatus) {
     // New entries, moved or started means we should refresh
-    if (deviceStatus.unreadEntries || deviceStatus.moved || deviceStatus.started) {
+    if (deviceStatus.moved || deviceStatus.started) {
       this._retrieveFlowerPowerData();
     }
   }
@@ -50,10 +50,7 @@ class PlantService {
     try {
       const task = new RetrieveFlowerPowerCalibratedDataTask();
       const calibratedData = await this._executor.execute(task);
-      this.log(`Retrieved calibrated data: ${util.inspect(calibratedData)}`);
-
-      const lux = calibratedData.lightLevel * 11.574 * 53.93;
-      this.log(`Lux values: Calibrated light level = ${calibratedData.lightLevel} x 11.574 x 53.93 = ${lux}lx`);
+      const lux = this._getLightLevelInLux(calibratedData.lightLevel);
 
       this._lightSensor
         .getCharacteristic(CurrentAmbientLightLevel)
@@ -73,6 +70,21 @@ class PlantService {
 
     this._scheduleDataRefresh();
   }
+
+  _getLightLevelInLux(lightLevel) {
+    // Factor 4659.293 was determined by sampling the lux conversion done by the Parrot app on iOS
+    // over the course of several days.
+    const ParrotFactor = 4659.293;
+    const LowerLuxThreshold = 500.0;
+
+    let lux = lightLevel * ParrotFactor;
+    if (lux < LowerLuxThreshold) {
+      lux = 0;
+    }
+
+    return lux;
+  }
+
   _scheduleDataRefresh() {
     if (this._dataTimer) {
       clearTimeout(this._dataTimer);
