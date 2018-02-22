@@ -2,7 +2,6 @@
 'use strict';
 
 const debug = require('debug')('flower:ble');
-const util = require('util');
 
 const BleUtils = require('../ble/BleUtils');
 

@@ -32,8 +32,9 @@ class SensorStatusService {
   }
 
   newAdvertisement(deviceStatus) {
-    // TODO: Last Move
-    // TODO: Restart
+    if (deviceStatus.started || deviceStatus.moved) {
+      this._retrieveTimestamps();
+    }
   }
 
   setLastUpdated() {
@@ -56,15 +57,15 @@ class SensorStatusService {
         this._statusService
           .getCharacteristic(Characteristic.LastBatteryChange)
           .updateValue(lastBatteryChange);
-      }
 
-      if (status.lastMoved) {
-        const moveTime = moment.duration(status.lastMoved);
-        const lastMoved = now.subtract(uptime).add(moveTime).format(preferredFormat);
+        if (status.lastMoved) {
+          const moveTime = moment.duration(status.lastMoved);
+          const lastMoved = now.subtract(uptime).add(moveTime).format(preferredFormat);
 
-        this._statusService
-          .getCharacteristic(Characteristic.LastMoved)
-          .updateValue(lastMoved);
+          this._statusService
+            .getCharacteristic(Characteristic.LastMoved)
+            .updateValue(lastMoved);
+        }
       }
     }
     catch (e) {
