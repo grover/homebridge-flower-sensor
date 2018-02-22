@@ -4,6 +4,8 @@ const util = require('util');
 
 const noble = require('noble');
 
+const StatusServiceTypes = require('./hap/StatusServiceTypes');
+
 const BleBrowser = require('./ble/BleBrowser');
 const BleExecutor = require('./ble/BleExecutor');
 const RetrieveDeviceInformationTask = require('./ble/RetrieveDeviceInformationTask');
@@ -28,6 +30,8 @@ module.exports = (homebridge) => {
   HOMEBRIDGE.Characteristic = homebridge.hap.Characteristic;
   HOMEBRIDGE.UUIDGen = homebridge.hap.uuid;
   HOMEBRIDGE.homebridge = homebridge;
+
+  StatusServiceTypes.registerWith(homebridge.hap);
 
   homebridge.registerPlatform(platformName, platformPrettyName, FlowerSensorPlatform, false);
 };
