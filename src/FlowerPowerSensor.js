@@ -39,7 +39,7 @@ class FlowerPowerSensor {
     this._accessoryInformation
       .setCharacteristic(Characteristic.Name, info.name)
       .setCharacteristic(Characteristic.Manufacturer, info.manufacturer)
-      .setCharacteristic(Characteristic.Model, this._device.getDeviceInfo().type)
+      .setCharacteristic(Characteristic.Model, info.model)
       .setCharacteristic(Characteristic.SerialNumber, info.serial)
       .setCharacteristic(Characteristic.FirmwareRevision, info.firmwareRevision)
       .setCharacteristic(Characteristic.HardwareRevision, info.hardwareRevision);

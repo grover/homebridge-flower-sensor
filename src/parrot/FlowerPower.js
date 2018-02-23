@@ -45,13 +45,15 @@ const FlowerPowerColor = [
   'Gray Blue'
 ];
 
-function getDeviceInformation(manufacturerData) {
+function getDeviceInformation(advertisement) {
   const deviceInfo = {
     generation: 1,
+    name: advertisement.localName,
     type: 'Flower Power',
     color: 'Unknown'
   };
 
+  const manufacturerData = advertisement.manufacturerData;
   if (manufacturerData && manufacturerData.length == 5) {
     deviceInfo.generation = 2;
     deviceInfo.companyIdentifier = manufacturerData.readUInt16LE(0);
@@ -229,6 +231,7 @@ class FlowerPowerDevice extends EventEmitter {
   }
 
   async identify() {
+    debug(`Identify requested on ${this._}`);
     return this._executor
       .execute(new WriteLedStateTask(true))
       .then(() => {
@@ -259,9 +262,10 @@ function extractVersion(value) {
 }
 
 async function createDevice(executor, peripheral) {
-  const deviceInfo = getDeviceInformation(peripheral.advertisement.manufacturerData);
+  const deviceInfo = getDeviceInformation(peripheral.advertisement);
 
   const accessoryInformation = await executor.execute(new RetrieveDeviceInformationTask());
+  accessoryInformation.model = deviceInfo.type;
   accessoryInformation.firmwareRevision = extractVersion(accessoryInformation.firmwareRevision);
   accessoryInformation.hardwareRevision = extractVersion(accessoryInformation.hardwareRevision);
 
@@ -270,6 +274,5 @@ async function createDevice(executor, peripheral) {
 
 module.exports = {
   isFlowerPowerAdvertisement: isFlowerPowerAdvertisement,
-  getDeviceInformation: getDeviceInformation,
   createDevice: createDevice
 };
