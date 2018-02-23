@@ -147,6 +147,8 @@ class FlowerPowerDevice extends EventEmitter {
 
     this._manufacturerData = clone(advertisement.manufacturerData);
     this._deviceStatus = getDeviceStatus(advertisement.manufacturerData);
+    debug(`New device status: ${util.inspect(this._deviceStatus)}`);
+
     this.emit('deviceStatusChanged', this._deviceStatus);
 
     if (this._deviceStatus.started || this._deviceStatus.moved) {
@@ -159,6 +161,7 @@ class FlowerPowerDevice extends EventEmitter {
   }
 
   async _retrieveBatteryStatus() {
+    debug(`Retrieving battery status`);
     try {
       this._batteryInfo = await this._executor.execute(new RetrieveBatteryLevelTask());
       debug(`Retrieved battery status: ${util.inspect(this._batteryInfo)}`);
@@ -181,10 +184,12 @@ class FlowerPowerDevice extends EventEmitter {
   }
 
   async requestSensorData() {
+    debug(`Retrieving sensor data`);
     try {
       const task = new RetrieveFlowerPowerCalibratedDataTask();
-
       const sensorData = await this._executor.execute(task);
+
+      debug(`Retrieved sensor data: ${util.inspect(sensorData)}`);
       sensorData.lightLevel = this._getLightLevelInLux(sensorData.lightLevel);
 
       this.emit('sensorData', sensorData);
@@ -219,6 +224,7 @@ class FlowerPowerDevice extends EventEmitter {
   }
 
   async _retrieveTimestamps() {
+    debug(`Retrieving timestamps`);
     try {
       const timestamps = await this._executor.execute(new RetrieveTimestampsTask());
       debug(`Retrieved timestamps: ${util.inspect(timestamps)}`);
