@@ -4,6 +4,7 @@ const util = require('util');
 const EventEmitter = require('events').EventEmitter;
 
 const RetrieveFlowerPowerCalibratedDataTask = require('../parrot/RetrieveFlowerPowerCalibratedDataTask');
+const EnableLiveModeTask = require('../parrot/EnableLiveModeTask');
 
 let CurrentAmbientLightLevel, CurrentRelativeHumidity, CurrentTemperature;
 
@@ -29,13 +30,26 @@ class PlantService extends EventEmitter {
 
     this._createService(api.hap);
 
-    this._retrieveFlowerPowerData();
+    this._retrieveFlowerPowerData().then(() => {
+      executor.execute(new EnableLiveModeTask(1));
+    });
   }
 
   _createService(hap) {
     this._lightSensor = new hap.Service.LightSensor(this.name);
+    this._lightSensor.getCharacteristic(CurrentAmbientLightLevel)
+      .on('subscribe', this._enableLiveMode.bind(this))
+      .on('unsubscribe', this._disableLiveMode.bind(this));
+
     this._humiditySensor = new hap.Service.HumiditySensor(this.name, 'soil');
+    this._humiditySensor.getCharacteristic(CurrentRelativeHumidity)
+      .on('subscribe', this._enableLiveMode.bind(this))
+      .on('unsubscribe', this._disableLiveMode.bind(this));
+
     this._soilTemperatureSensor = new hap.Service.TemperatureSensor(this.name, 'soil');
+    this._soilTemperatureSensor.getCharacteristic(CurrentTemperature)
+      .on('subscribe', this._enableLiveMode.bind(this))
+      .on('unsubscribe', this._disableLiveMode.bind(this));
   }
 
   getServices() {
@@ -96,6 +110,14 @@ class PlantService extends EventEmitter {
     }
 
     this._dataTimer = setTimeout(this._retrieveFlowerPowerData.bind(this), PLANT_DATA_REFRESH_INTERVAL);
+  }
+
+  _enableLiveMode() {
+    this.log('Enable live mode');
+  }
+
+  _disableLiveMode() {
+    this.log('Disable live mode');
   }
 }
 

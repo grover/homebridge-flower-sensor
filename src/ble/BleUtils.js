@@ -96,6 +96,19 @@ async function readUInt8(characteristic) {
   return data.readUInt8(0);
 }
 
+function subscribe(characteristic) {
+  return new Promise((resolve, reject) => {
+    characteristic.notify(true, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
 module.exports = {
   discoverServices: discoverServices,
   discoverCharacteristics: discoverCharacteristics,
@@ -103,5 +116,6 @@ module.exports = {
   readString: readString,
   readUInt8: readUInt8,
 
-  writeCharacteristic: writeCharacteristic
+  writeCharacteristic: writeCharacteristic,
+  subscribe: subscribe
 };
