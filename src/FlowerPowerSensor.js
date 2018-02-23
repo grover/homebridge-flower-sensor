@@ -1,12 +1,6 @@
 'use strict';
 
-const util = require('util');
-
 let Characteristic, Service;
-
-const FlowerPower = require('./parrot/FlowerPower');
-
-const WriteLedStateTask = require('./parrot/WriteLedStateTask');
 
 const BatteryService = require('./services/BatteryService');
 const PlantService = require('./services/PlantService');
@@ -14,7 +8,7 @@ const StatusService = require('./services/StatusService');
 const RecommendationService = require('./services/RecommendationService');
 
 class FlowerPowerSensor {
-  constructor(api, log, config, executor, peripheral) {
+  constructor(api, log, config, device) {
     Characteristic = api.hap.Characteristic;
     Service = api.hap.Service;
 
@@ -22,23 +16,9 @@ class FlowerPowerSensor {
     this.log = log;
     this.name = config.name;
     this.displayName = this.name;
-
-    this._config = config;
-    this._executor = executor;
-    this._peripheral = peripheral;
-    this._deviceInfo = FlowerPower.getDeviceInformation(peripheral.advertisement.manufacturerData);
+    this._device = device;
 
     this._services = this._createServices();
-
-    this.newAdvertisement(peripheral.advertisement);
-  }
-
-  newAdvertisement(advertisement) {
-    this.log(`Advertisement changed? old=${util.inspect(this._peripheral.advertisement.manufacturerData)}, new=${util.inspect(advertisement.manufacturerData)}`);
-
-    const deviceStatus = FlowerPower.getDeviceStatus(advertisement.manufacturerData);
-    this._batteryService.newAdvertisement(deviceStatus);
-    this._plantService.newAdvertisement(deviceStatus);
   }
 
   _createServices() {
@@ -53,34 +33,18 @@ class FlowerPowerSensor {
   }
 
   _createAccessoryInformationService() {
-    const info = this._config.accessoryInformation;
-    this.log(`Info: ${util.inspect(info)}`);
-
-    const firmwareVersion = this._extractVersion(info.firmwareRevision);
-    const hardwareVersion = this._extractVersion(info.hardwareRevision);
+    const info = this._device.getAccessoryInformation();
 
     this._accessoryInformation = new Service.AccessoryInformation();
     this._accessoryInformation
       .setCharacteristic(Characteristic.Name, info.name)
       .setCharacteristic(Characteristic.Manufacturer, info.manufacturer)
-      .setCharacteristic(Characteristic.Model, this._deviceInfo.type)
+      .setCharacteristic(Characteristic.Model, this._device.getDeviceInfo().type)
       .setCharacteristic(Characteristic.SerialNumber, info.serial)
-      .setCharacteristic(Characteristic.FirmwareRevision, firmwareVersion)
-      .setCharacteristic(Characteristic.HardwareRevision, hardwareVersion);
+      .setCharacteristic(Characteristic.FirmwareRevision, info.firmwareRevision)
+      .setCharacteristic(Characteristic.HardwareRevision, info.hardwareRevision);
 
     return this._accessoryInformation;
-  }
-
-  _extractVersion(value) {
-    const versionRegEx = /.*-(\d+\.{1}\d+\.?\d*)_.*/;
-    try {
-      return versionRegEx.exec(value)[1];
-    }
-    catch (e) {
-      this.log(`Failed to extract version from ${value}`);
-    }
-
-    return '';
   }
 
   _createBridgingStateService() {
@@ -93,25 +57,22 @@ class FlowerPowerSensor {
   }
 
   _createBatteryService() {
-    this._batteryService = new BatteryService(this.log, this.api, this._executor);
+    this._batteryService = new BatteryService(this.log, this.api, this._device);
     return this._batteryService.getServices();
   }
 
   _createPlantService() {
-    this._plantService = new PlantService(this.log, this.api, this.name, this._executor);
-    this._plantService
-      .on('updated', this._onPlantDataUpdated.bind(this));
-
+    this._plantService = new PlantService(this.log, this.api, this.name, this._device);
     return this._plantService.getServices();
   }
 
   _createStatusService() {
-    this._statusService = new StatusService(this.log, this.api, this.name, this._executor);
+    this._statusService = new StatusService(this.log, this.api, this.name, this._device);
     return this._statusService.getServices();
   }
 
   _createRecommendationService() {
-    this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._executor);
+    this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._device);
     return this._recommendationService.getServices();
   }
 
@@ -122,25 +83,9 @@ class FlowerPowerSensor {
   identify(callback) {
     this.log(`Identify requested on ${this.name}`);
 
-    this._executor
-      .execute(new WriteLedStateTask(true))
-      .then(() => {
-        callback();
-        setTimeout(() => this._disableLED(), 5000);
-      })
-      .catch(e => callback(e));
-  }
-
-  _disableLED() {
-    this._executor
-      .execute(new WriteLedStateTask(false))
-      .catch(e => {
-        this.log(`Failed to disable the LED: ${util.inspect(e)}`);
-      });
-  }
-
-  _onPlantDataUpdated() {
-    this._statusService.setLastUpdated();
+    this._device.identify()
+      .then(callback)
+      .catch(callback);
   }
 }
 

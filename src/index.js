@@ -9,7 +9,6 @@ const StatusServiceTypes = require('./hap/StatusServiceTypes');
 
 const BleBrowser = require('./ble/BleBrowser');
 const BleExecutor = require('./ble/BleExecutor');
-const RetrieveDeviceInformationTask = require('./ble/RetrieveDeviceInformationTask');
 
 const FlowerPower = require('./parrot/FlowerPower');
 
@@ -79,23 +78,24 @@ const FlowerSensorPlatform = class {
     }
 
     this.log(`Found flower power sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
-    const accessory = this._devices[peripheral.id];
-    if (accessory === undefined) {
+    let device = this._devices[peripheral.id];
+    if (device === undefined) {
+      const executor = new BleExecutor(peripheral);
       this._devices[peripheral.id] = null;
+
+      device = await FlowerPower.createDevice(executor, peripheral);
+      this._devices[peripheral.id] = device;
 
       const sensorConfig = this._findConfigurationForPeripheral(peripheral.advertisement.localName);
       if (sensorConfig) {
         this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
-        const accessory = await this._createAccessory(peripheral, sensorConfig);
-
-        this._devices[peripheral.id] = accessory;
+        const accessory = await this._createAccessory(device, sensorConfig);
         this._accessories.push(accessory);
-
         this._tryToPublish();
       }
     }
-    else if (accessory !== null) {
-      accessory.newAdvertisement(peripheral.advertisement);
+    else if (device !== null) {
+      device.newAdvertisement(peripheral.advertisement);
     }
   }
 
@@ -103,10 +103,8 @@ const FlowerSensorPlatform = class {
     return this.config.sensors.find(cfg => cfg.id === name);
   }
 
-  async _createAccessory(peripheral, sensorConfig) {
-    const executor = new BleExecutor(peripheral);
-    sensorConfig.accessoryInformation = await executor.execute(new RetrieveDeviceInformationTask());
-    return new FlowerPowerSensor(this.api, this.log, sensorConfig, executor, peripheral);
+  async _createAccessory(device, sensorConfig) {
+    return new FlowerPowerSensor(this.api, this.log, sensorConfig, device);
   }
 
   async _tryToPublish() {

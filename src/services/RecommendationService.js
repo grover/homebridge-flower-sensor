@@ -1,13 +1,12 @@
 'use strict';
 
-const util = require('util');
 const EventEmitter = require('events').EventEmitter;
 
 let TargetRelativeHumidity, TargetAmbientLightLevel, ContactSensorState;
 
 class RecommendationService extends EventEmitter {
 
-  constructor(log, api, name) {
+  constructor(log, api, name, device) {
     super();
 
     this.log = log;
@@ -18,6 +17,8 @@ class RecommendationService extends EventEmitter {
     ContactSensorState = api.hap.Characteristic.ContactSensorState;
 
     this._createService(api.hap);
+
+    device.on('sensorData', this._onSensorData.bind(this));
   }
 
   _createService(hap) {
@@ -40,16 +41,15 @@ class RecommendationService extends EventEmitter {
     return [this._recommendationService, this._lowHumiditySensor, this._lowAmbientLightSensor];
   }
 
-  newAdvertisement(deviceStatus) {
-    // New entries, moved or started means we should refresh
-  }
-
   _setTargetRelativeHumidity(value, callback) {
     callback();
   }
 
   _setTargetAmbientLightLevel(value, callback) {
     callback();
+  }
+
+  _onSensorData(/*sensorData*/) {
   }
 }
 

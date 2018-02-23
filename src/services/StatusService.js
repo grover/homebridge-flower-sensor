@@ -1,8 +1,5 @@
 'use strict';
 
-const util = require('util');
-const RetrieveTimestampsTask = require('../parrot/RetrieveTimestampsTask');
-
 const moment = require('moment');
 
 let Characteristic;
@@ -11,16 +8,18 @@ const preferredFormat = 'L LT';
 
 class SensorStatusService {
 
-  constructor(log, api, name, executor) {
+  constructor(log, api, name, device) {
     this.log = log;
     this.name = name;
-    this._executor = executor;
+    this._device = device;
 
     Characteristic = api.hap.Characteristic;
 
     this._createService(api.hap);
 
-    this._retrieveTimestamps();
+    device
+      .on('sensorData', this._onSensorData.bind(this))
+      .on('timestampsChanged', this._onTimestampsChanged.bind(this));
   }
 
   _createService(hap) {
@@ -31,45 +30,31 @@ class SensorStatusService {
     return [this._statusService];
   }
 
-  newAdvertisement(deviceStatus) {
-    if (deviceStatus.started || deviceStatus.moved) {
-      this._retrieveTimestamps();
-    }
-  }
-
-  setLastUpdated() {
+  _onSensorData() {
     this._statusService
       .getCharacteristic(Characteristic.LastUpdated)
       .updateValue(moment().format(preferredFormat));
   }
 
-  async _retrieveTimestamps() {
-    try {
-      const status = await this._executor.execute(new RetrieveTimestampsTask());
-      this.log(`Retrieved timestamps: ${util.inspect(status)}`);
+  _onTimestampsChanged(timestamps) {
+    const now = moment();
 
-      const now = moment();
+    if (timestamps.uptime) {
+      const uptime = moment.duration(timestamps.uptime, 's');
+      const lastBatteryChange = now.subtract(uptime).format(preferredFormat);
 
-      if (status.uptime) {
-        const uptime = moment.duration(status.uptime, 's');
-        const lastBatteryChange = now.subtract(uptime).format(preferredFormat);
+      this._statusService
+        .getCharacteristic(Characteristic.LastBatteryChange)
+        .updateValue(lastBatteryChange);
+
+      if (timestamps.lastMoved) {
+        const moveTime = moment.duration(timestamps.lastMoved);
+        const lastMoved = now.subtract(uptime).add(moveTime).format(preferredFormat);
 
         this._statusService
-          .getCharacteristic(Characteristic.LastBatteryChange)
-          .updateValue(lastBatteryChange);
-
-        if (status.lastMoved) {
-          const moveTime = moment.duration(status.lastMoved);
-          const lastMoved = now.subtract(uptime).add(moveTime).format(preferredFormat);
-
-          this._statusService
-            .getCharacteristic(Characteristic.LastMoved)
-            .updateValue(lastMoved);
-        }
+          .getCharacteristic(Characteristic.LastMoved)
+          .updateValue(lastMoved);
       }
-    }
-    catch (e) {
-      this.log(`Failed to retrieve the battery levels.Error: ${util.inspect(e)}`);
     }
   }
 }
