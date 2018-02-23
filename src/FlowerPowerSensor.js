@@ -11,6 +11,7 @@ const WriteLedStateTask = require('./parrot/WriteLedStateTask');
 const BatteryService = require('./services/BatteryService');
 const PlantService = require('./services/PlantService');
 const StatusService = require('./services/StatusService');
+const RecommendationService = require('./services/RecommendationService');
 
 class FlowerPowerSensor {
   constructor(api, log, config, executor, peripheral) {
@@ -46,7 +47,8 @@ class FlowerPowerSensor {
       this._createBridgingStateService(),
       ...this._createBatteryService(),
       ...this._createPlantService(),
-      ...this._createStatusService()
+      ...this._createStatusService(),
+      ...this._createRecommendationService()
     ];
   }
 
@@ -106,6 +108,11 @@ class FlowerPowerSensor {
   _createStatusService() {
     this._statusService = new StatusService(this.log, this.api, this.name, this._executor);
     return this._statusService.getServices();
+  }
+
+  _createRecommendationService() {
+    this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._executor);
+    return this._recommendationService.getServices();
   }
 
   getServices() {

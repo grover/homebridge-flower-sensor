@@ -4,6 +4,7 @@ const util = require('util');
 
 const noble = require('noble');
 
+const RecommendationServiceTypes = require('./hap/RecommendationServiceTypes');
 const StatusServiceTypes = require('./hap/StatusServiceTypes');
 
 const BleBrowser = require('./ble/BleBrowser');
@@ -31,6 +32,7 @@ module.exports = (homebridge) => {
   HOMEBRIDGE.UUIDGen = homebridge.hap.uuid;
   HOMEBRIDGE.homebridge = homebridge;
 
+  RecommendationServiceTypes.registerWith(homebridge.hap);
   StatusServiceTypes.registerWith(homebridge.hap);
 
   homebridge.registerPlatform(platformName, platformPrettyName, FlowerSensorPlatform, false);
