@@ -8,21 +8,28 @@ let TargetRelativeHumidity, TargetAmbientLightLevel, ContactSensorState, Current
 
 class RecommendationService extends EventEmitter {
 
-  constructor(log, api, name, device) {
+  constructor(log, api, name, device, config) {
     super();
 
     this.log = log;
     this.name = name;
+
+    if (config.thresholdHumiditiy === undefined) {
+      this.log(`Missing thresholdHumidity value for plant recommendations. Assuming minimum humidity level of zero and recommendations will not trigger.`);
+    }
+    if (config.thresholdLightLevel === undefined) {
+      this.log(`Missing thresholdHumidity value for plant recommendations. Assuming minimum light level of zero and recommendations will not trigger.`);
+    }
 
     /**
      * RingBuffer for the measurements of a single day. Assume 6 samples per hour over 24 hours.
      */
     this._history = new RingBuffer(6 * 24);
 
-    this._targetHumidity = 26.0;
-    this._targetLightLevel = 1200.0;
+    this._targetHumidity = config.thresholdHumiditiy || 0;
+    this._targetLightLevel = config.thresholdLightLevel || 0;
 
-    TargetRelativeHumidity = api.hap.Characteristic.TargetRelativeHumidity;
+    TargetRelativeHumidity = api.hap.Characteristic.FlowerTargetRelativeHumidity;
     TargetAmbientLightLevel = api.hap.Characteristic.TargetAmbientLightLevel;
     CurrentAverageRelativeHumidity = api.hap.Characteristic.CurrentAverageRelativeHumidity;
     CurrentAverageAmbientLightLevel = api.hap.Characteristic.CurrentAverageAmbientLightLevel;
@@ -34,14 +41,12 @@ class RecommendationService extends EventEmitter {
   }
 
   _createService(hap) {
-    this._recommendationService = new hap.Service.RecommendationService(this.name);
+    this._recommendationService = new hap.Service.RecommendationService(`${this.name} Recommendations`);
 
     this._recommendationService.getCharacteristic(TargetRelativeHumidity)
-      .on('set', this._setTargetRelativeHumidity.bind(this))
       .updateValue(this._targetHumidity);
 
     this._recommendationService.getCharacteristic(TargetAmbientLightLevel)
-      .on('set', this._setTargetAmbientLightLevel.bind(this))
       .updateValue(this._targetLightLevel);
 
     this._lowHumiditySensor = new hap.Service.ContactSensor(`${this.name} Low Humidity`, 'humidity');
@@ -77,7 +82,7 @@ class RecommendationService extends EventEmitter {
   }
 
   _updateAverage() {
-    const averageSensorData = this._getAverageSensorData()
+    const averageSensorData = this._getAverageSensorData();
 
     const lowLightLevelWarning = averageSensorData.lightLevel < this._targetLightLevel;
     if (lowLightLevelWarning) {

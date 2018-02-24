@@ -15,7 +15,7 @@ module.exports = {
       Characteristic.call(this, 'Target Ambient Light Level', Characteristic.TargetAmbientLightLevel.UUID);
       this.setProps({
         format: Characteristic.Formats.FLOAT,
-        perms: [Characteristic.Perms.READ, Characteristic.Perms.WRITE],
+        perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY],
         unit: Characteristic.Units.LUX,
         minValue: 0.0001,
         maxValue: 100000.0
@@ -29,14 +29,13 @@ module.exports = {
     // Current Average Ambient Light Level
     //////////////////////////////////////////////////////////////////////////////////////////
     Characteristic.CurrentAverageAmbientLightLevel = function () {
-      Characteristic.call(this, 'Current Average Ambient Light Level', Characteristic.CurrentAverageAmbientLightLevel.UUID);
+      Characteristic.call(this, '24h Average Ambient Light Level', Characteristic.CurrentAverageAmbientLightLevel.UUID);
       this.setProps({
         format: Characteristic.Formats.FLOAT,
         perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY],
         unit: Characteristic.Units.LUX,
         minValue: 0.0,
-        maxValue: 100000.0,
-        minStep: 100.0
+        maxValue: 100000.0
       });
       this.value = this.getDefaultValue();
     };
@@ -44,10 +43,28 @@ module.exports = {
     util.inherits(Characteristic.CurrentAverageAmbientLightLevel, Characteristic);
 
     //////////////////////////////////////////////////////////////////////////////////////////
+    // Target Relative Humidity
+    //////////////////////////////////////////////////////////////////////////////////////////
+    Characteristic.FlowerTargetRelativeHumidity = function () {
+      Characteristic.call(this, 'Target Relative Humidity', Characteristic.FlowerTargetRelativeHumidity.UUID);
+      this.setProps({
+        format: Characteristic.Formats.FLOAT,
+        perms: [Characteristic.Perms.READ, Characteristic.Perms.NOTIFY],
+        unit: Characteristic.Units.PERCENTAGE,
+        minValue: 0,
+        maxValue: 100,
+        minStep: 1
+      });
+      this.value = this.getDefaultValue();
+    };
+    Characteristic.FlowerTargetRelativeHumidity.UUID = 'B9A294F9-3EAA-4282-9F1B-AADE976E6729';
+    util.inherits(Characteristic.FlowerTargetRelativeHumidity, Characteristic);
+
+    //////////////////////////////////////////////////////////////////////////////////////////
     // Current Average Relative Humidity
     //////////////////////////////////////////////////////////////////////////////////////////
     Characteristic.CurrentAverageRelativeHumidity = function () {
-      Characteristic.call(this, 'Current Average Relative Humidity', Characteristic.CurrentAverageRelativeHumidity.UUID);
+      Characteristic.call(this, '24h Average Relative Humidity', Characteristic.CurrentAverageRelativeHumidity.UUID);
       this.setProps({
         format: Characteristic.Formats.FLOAT,
         unit: Characteristic.Units.PERCENTAGE,
@@ -68,7 +85,7 @@ module.exports = {
       Service.call(this, displayName, Service.RecommendationService.UUID, subtype);
 
       // Required Characteristics
-      this.addCharacteristic(Characteristic.TargetRelativeHumidity);
+      this.addCharacteristic(Characteristic.FlowerTargetRelativeHumidity);
       this.addCharacteristic(Characteristic.TargetAmbientLightLevel);
       this.addCharacteristic(Characteristic.CurrentAverageRelativeHumidity);
       this.addCharacteristic(Characteristic.CurrentAverageAmbientLightLevel);

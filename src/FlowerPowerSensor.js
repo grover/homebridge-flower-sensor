@@ -16,6 +16,7 @@ class FlowerPowerSensor {
     this.log = log;
     this.name = config.name;
     this.displayName = this.name;
+    this._config = config;
     this._device = device;
 
     this._services = this._createServices();
@@ -72,7 +73,11 @@ class FlowerPowerSensor {
   }
 
   _createRecommendationService() {
-    this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._device);
+    if (!this._config.recommendations) {
+      return [];
+    }
+
+    this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._device, this._config);
     return this._recommendationService.getServices();
   }
 
