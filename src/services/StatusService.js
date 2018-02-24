@@ -23,7 +23,7 @@ class SensorStatusService {
   }
 
   _createService(hap) {
-    this._statusService = new hap.Service.SensorStatusService(this.name);
+    this._statusService = new hap.Service.SensorStatusService(`${this.name} Status`);
   }
 
   getServices() {
