@@ -4,7 +4,7 @@ const EventEmitter = require('events').EventEmitter;
 
 const RingBuffer = require('../RingBuffer');
 
-let TargetRelativeHumidity, TargetAmbientLightLevel, ContactSensorState;
+let TargetRelativeHumidity, TargetAmbientLightLevel, ContactSensorState, CurrentAverageRelativeHumidity, CurrentAverageAmbientLightLevel;
 
 class RecommendationService extends EventEmitter {
 
@@ -24,6 +24,8 @@ class RecommendationService extends EventEmitter {
 
     TargetRelativeHumidity = api.hap.Characteristic.TargetRelativeHumidity;
     TargetAmbientLightLevel = api.hap.Characteristic.TargetAmbientLightLevel;
+    CurrentAverageRelativeHumidity = api.hap.Characteristic.CurrentAverageRelativeHumidity;
+    CurrentAverageAmbientLightLevel = api.hap.Characteristic.CurrentAverageAmbientLightLevel;
     ContactSensorState = api.hap.Characteristic.ContactSensorState;
 
     this._createService(api.hap);
@@ -86,6 +88,12 @@ class RecommendationService extends EventEmitter {
     if (lowHumidityWarning) {
       this.log(`Low humidity warning - average moisture ${averageSensorData.soilMoisture} %`);
     }
+
+    this._recommendationService.getCharacteristic(CurrentAverageAmbientLightLevel)
+      .updateValue(averageSensorData.lightLevel);
+
+    this._recommendationService.getCharacteristic(CurrentAverageRelativeHumidity)
+      .updateValue(averageSensorData.soilMoisture);
 
     this._updateSensor(this._lowAmbientLightSensor, lowLightLevelWarning);
     this._updateSensor(this._lowHumiditySensor, lowHumidityWarning);
