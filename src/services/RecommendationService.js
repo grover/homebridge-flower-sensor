@@ -106,18 +106,25 @@ class RecommendationService extends EventEmitter {
 
   _getAverageSensorData() {
     const oldestTimestamp = Date.now() - (24 * 60 * 60 * 1000);
+
     let lightLevel = 0;
+    let itemsWithLight = 0;
+
     let soilMoisture = 0;
     let items = 0;
 
     for (const entry of this._history.filter(item => item.timestamp >= oldestTimestamp)) {
-      lightLevel += entry.lightLevel;
+      if (entry.lightLevel > 0) {
+        lightLevel += entry.lightLevel;
+        itemsWithLight++;
+      }
+
       soilMoisture += entry.soilMoisture;
       items++;
     }
 
     if (items > 1) {
-      lightLevel /= items;
+      lightLevel /= itemsWithLight;
       soilMoisture /= items;
     }
 
