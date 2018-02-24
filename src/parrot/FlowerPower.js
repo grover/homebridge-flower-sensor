@@ -189,6 +189,8 @@ class FlowerPowerDevice extends EventEmitter {
       const task = new RetrieveFlowerPowerCalibratedDataTask();
       const sensorData = await this._executor.execute(task);
 
+      sensorData.timestamp = Date.now();
+
       debug(`Retrieved sensor data: ${util.inspect(sensorData)}`);
       sensorData.lightLevel = this._getLightLevelInLux(sensorData.lightLevel);
 
