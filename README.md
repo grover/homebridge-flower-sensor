@@ -18,13 +18,12 @@ This plugin exposes the following capabilities of the Flower Power sensor to Hom
 * Ambient Light Level
 * Identifying the sensor flashes the built-in LED
 * Monitor the battery status of the Flower Power sensor
+* Provides date/time the sensor data was last retrieved
+* Provides the date/time the batteries were last changed
+* 24h average low light level sensor trigger for plant recommendations
+* 24h average low humidity level sensor trigger to remind you to water your plants
 
-As of Version 0.2.0:
-
-* Added status service, providing time/date the sensor was last queried and the batteries were changed
-* Added recommendation service, continuously monitoring the sensor values and alerting you to your plants needs
-
-There're more capabilities planned for the future.
+There're more capabilities planned for the future. And see the [CHANGELOG](CHANGELOG.md) for release information.
 
 ## Using this plugin
 
