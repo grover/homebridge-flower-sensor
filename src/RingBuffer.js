@@ -22,6 +22,15 @@ class RingBuffer {
     for (let i = 0; i < this.length; i++)
       yield this._buffer[(this._tail + i) % this.capacity];
   }
+
+  *filter(predicate) {
+    for (let i = 0; i < this.length; i++) {
+      const item = this._buffer[(this._tail + i) % this.capacity];
+      if (predicate(item)) {
+        yield item;
+      }
+    }
+  }
 }
 
 module.exports = RingBuffer;

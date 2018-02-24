@@ -19,8 +19,8 @@ class RecommendationService extends EventEmitter {
      */
     this._history = new RingBuffer(6 * 24);
 
-    this._targetHumidity = 0;
-    this._targetLightLevel = 0;
+    this._targetHumidity = 26.0;
+    this._targetLightLevel = 1200.0;
 
     TargetRelativeHumidity = api.hap.Characteristic.TargetRelativeHumidity;
     TargetAmbientLightLevel = api.hap.Characteristic.TargetAmbientLightLevel;
@@ -33,10 +33,14 @@ class RecommendationService extends EventEmitter {
 
   _createService(hap) {
     this._recommendationService = new hap.Service.RecommendationService(this.name);
+
     this._recommendationService.getCharacteristic(TargetRelativeHumidity)
-      .on('set', this._setTargetRelativeHumidity.bind(this));
+      .on('set', this._setTargetRelativeHumidity.bind(this))
+      .updateValue(this._targetHumidity);
+
     this._recommendationService.getCharacteristic(TargetAmbientLightLevel)
-      .on('set', this._setTargetAmbientLightLevel.bind(this));
+      .on('set', this._setTargetAmbientLightLevel.bind(this))
+      .updateValue(this._targetLightLevel);
 
     this._lowHumiditySensor = new hap.Service.ContactSensor(`${this.name} Low Humidity`, 'humidity');
     this._lowHumiditySensor.getCharacteristic(ContactSensorState)
@@ -54,39 +58,61 @@ class RecommendationService extends EventEmitter {
   _setTargetRelativeHumidity(value, callback) {
     this._targetHumidity = value;
     callback();
+
+    this._updateAverage();
   }
 
   _setTargetAmbientLightLevel(value, callback) {
     this._targetLightLevel = value;
     callback();
+
+    this._updateAverage();
   }
 
   _onSensorData(sensorData) {
     this._history.push(sensorData);
-
-    this._calculateAverages();
+    this._updateAverage();
   }
 
-  _calculateAverages() {
+  _updateAverage() {
+    const averageSensorData = this._getAverageSensorData()
 
+    const lowLightLevelWarning = averageSensorData.lightLevel < this._targetLightLevel;
+    if (lowLightLevelWarning) {
+      this.log(`Low light warning - average light level ${averageSensorData.lightLevel} lux`);
+    }
+
+    const lowHumidityWarning = averageSensorData.soilMoisture < this._targetHumidity;
+    if (lowHumidityWarning) {
+      this.log(`Low humidity warning - average moisture ${averageSensorData.soilMoisture} %`);
+    }
+
+    this._updateSensor(this._lowAmbientLightSensor, lowLightLevelWarning);
+    this._updateSensor(this._lowHumiditySensor, lowHumidityWarning);
+  }
+
+  _getAverageSensorData() {
+    const oldestTimestamp = Date.now() - (24 * 60 * 60 * 1000);
     let lightLevel = 0;
     let soilMoisture = 0;
+    let items = 0;
 
-    // Do we have a full day's worth of samples?
-    if (this._history.length < this._history.capacity) {
-      return;
-    }
-
-    for (const entry of this._history) {
+    for (const entry of this._history.filter(item => item.timestamp >= oldestTimestamp)) {
       lightLevel += entry.lightLevel;
       soilMoisture += entry.soilMoisture;
+      items++;
     }
 
-    lightLevel /= this._history.capacity;
-    soilMoisture /= this._history.capacity;
+    if (items > 1) {
+      lightLevel /= items;
+      soilMoisture /= items;
+    }
 
-    this._updateSensor(this._lowAmbientLightSensor, lightLevel < this._targetLightLevel);
-    this._updateSensor(this._lowHumiditySensor, soilMoisture < this._targetHumidity);
+    return {
+      items: items,
+      lightLevel: lightLevel,
+      soilMoisture: soilMoisture
+    };
   }
 
   _updateSensor(sensor, state) {
