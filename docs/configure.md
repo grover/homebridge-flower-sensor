@@ -89,3 +89,27 @@ Multiple sensors are supported, simply add each of them to the sensors section:
   ]
 }
 ```
+
+## Configuring recommendations
+
+This plugin is able to create sensors that trigger if the light or humidity levels
+are below recommended values for your plant. To enable recommendations, extend the
+plant configuration with the following values:
+
+```json
+{
+  "name": "Plant/Sensor name",
+  "id": "Flower power 7CF3",
+  "recommendations": true,
+  "thresholdLightLevel": 1200,
+  "thresholdHumidity": 26
+}
+```
+
+The added three values are described below:
+
+| Value | Type | Description |
+|-------|------|-------------|
+| recommendations | Boolean | Determines if recommendations and the corresponding sensors are enabled. If true, the plugin monitors the sensor data and triggers contact sensors if the thresholds are not reached. |
+| thresholdLightLevel | float | The light level threshold in lux (lumens per square meter.) The plugin averages all non-zero light levels over the span of 24h to determine if the threshold was met. |
+| thresholdHumidity | float | The humidity threshold in percent. The humidity levels are averaged over a span of 24h before compared with the threshold. |

@@ -19,6 +19,11 @@ This plugin exposes the following capabilities of the Flower Power sensor to Hom
 * Identifying the sensor flashes the built-in LED
 * Monitor the battery status of the Flower Power sensor
 
+As of Version 0.2.0:
+
+* Added status service, providing time/date the sensor was last queried and the batteries were changed
+* Added recommendation service, continuously monitoring the sensor values and alerting you to your plants needs
+
 There're more capabilities planned for the future.
 
 ## Using this plugin
@@ -37,6 +42,8 @@ This platform and the switches it creates have been verified to work with the fo
 
 * Home
 * Elgato Eve
+
+See [HomeKit Apps](docs/apps.md) for a comparison table of supported features.
 
 ## Credits
 
