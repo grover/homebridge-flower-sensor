@@ -20,7 +20,7 @@ class RingBuffer {
 
   *[Symbol.iterator]() {
     for (let i = 0; i < this.length; i++)
-      yield this.buffer[(this.tail + i) % this.capacity];
+      yield this._buffer[(this._tail + i) % this.capacity];
   }
 }
 
