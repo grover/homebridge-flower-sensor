@@ -180,7 +180,7 @@ class FlowerPowerDevice extends EventEmitter {
       clearTimeout(this._batteryTimer);
     }
 
-    this._batteryTimer = setTimeout(this._retrieveBatteryLevel.bind(this), BATTERY_LEVEL_REFRESH_INTERVAL);
+    this._batteryTimer = setTimeout(this._retrieveBatteryStatus.bind(this), BATTERY_LEVEL_REFRESH_INTERVAL);
   }
 
   async requestSensorData() {
