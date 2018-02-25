@@ -41,7 +41,7 @@ class BleBrowser extends EventEmitter {
 
   _stop() {
     if (this._isScanning) {
-      this.log('Stopped to scan for BLE HomeKit accessories');
+      this.log('Stopped scanning for BLE HomeKit accessories');
       this.noble.stopScanning();
     }
   }
