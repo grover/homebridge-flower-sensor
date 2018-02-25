@@ -2,7 +2,7 @@
 
 const debug = require('debug')('flower:device');
 
-const EventEmitter = require('events').EventEmitter;
+const Device = require('../ble/Device');
 const isEqual = require('array-equal');
 const clone = require('clone');
 const util = require('util');
@@ -79,25 +79,28 @@ function getDeviceStatus(manufacturerData) {
   return deviceStatus;
 }
 
-class FlowerPowerDevice extends EventEmitter {
-  constructor(executor, peripheral, deviceInfo, accessoryInformation) {
-    super();
+class FlowerPowerDevice extends Device {
+
+  constructor(executor, peripheral) {
+    super(peripheral.advertisement.localName, peripheral, executor);
 
     this._manufacturerData = [];
 
-    this._accessoryInformation = accessoryInformation;
+    this._accessoryInformation = {};
     this._batteryInfo = {};
     this._batteryTimer = undefined;
     this._dataTimer = undefined;
-    this._deviceInfo = deviceInfo;
+    this._deviceInfo = getDeviceInformation(peripheral.advertisement);
     this._deviceStatus = {};
-    this._executor = executor;
 
     this.newAdvertisement(peripheral.advertisement);
+  }
 
-    this._retrieveTimestamps();
-    this._retrieveBatteryStatus();
-    this.requestSensorData();
+  async _initialize() {
+    await this._requestAccessoryInformation();
+    await this._retrieveTimestamps();
+    await this._retrieveBatteryStatus();
+    await this.requestSensorData();
   }
 
   getAccessoryInformation() {
@@ -148,10 +151,17 @@ class FlowerPowerDevice extends EventEmitter {
     return isEqual(manufacturerData, this._manufacturerData) === false;
   }
 
+  async _requestAccessoryInformation() {
+    this.accessoryInformation = await this.execute(new RetrieveDeviceInformationTask());
+    this.accessoryInformation.model = this._deviceInfo.type;
+    this.accessoryInformation.firmwareRevision = extractVersion(this.accessoryInformation.firmwareRevision);
+    this.accessoryInformation.hardwareRevision = extractVersion(this.accessoryInformation.hardwareRevision);
+  }
+
   async _retrieveBatteryStatus() {
     debug('Retrieving battery status');
     try {
-      this._batteryInfo = await this._executor.execute(new RetrieveBatteryLevelTask());
+      this._batteryInfo = await this.execute(new RetrieveBatteryLevelTask());
       debug(`Retrieved battery status: ${util.inspect(this._batteryInfo)}`);
 
       this.emit('batteryInfoChanged', this._batteryInfo);
@@ -175,7 +185,7 @@ class FlowerPowerDevice extends EventEmitter {
     debug('Retrieving sensor data');
     try {
       const task = new RetrieveFlowerPowerCalibratedDataTask();
-      const sensorData = await this._executor.execute(task);
+      const sensorData = await this.execute(task);
 
       sensorData.timestamp = Date.now();
 
@@ -216,7 +226,7 @@ class FlowerPowerDevice extends EventEmitter {
   async _retrieveTimestamps() {
     debug('Retrieving timestamps');
     try {
-      const timestamps = await this._executor.execute(new RetrieveTimestampsTask());
+      const timestamps = await this.execute(new RetrieveTimestampsTask());
       debug(`Retrieved timestamps: ${util.inspect(timestamps)}`);
 
       this.emit('timestampsChanged', timestamps);
@@ -228,7 +238,7 @@ class FlowerPowerDevice extends EventEmitter {
 
   async identify() {
     debug(`Identify requested on ${this._}`);
-    return this._executor
+    return this
       .execute(new WriteLedStateTask(true))
       .then(() => {
         setTimeout(() => this._disableLED(), 5000);
@@ -236,7 +246,7 @@ class FlowerPowerDevice extends EventEmitter {
   }
 
   _disableLED() {
-    this._executor
+    this
       .execute(new WriteLedStateTask(false))
       .catch(e => {
         debug(`Failed to disable the LED: ${util.inspect(e)}`);
@@ -258,14 +268,9 @@ function extractVersion(value) {
 }
 
 async function createDevice(executor, peripheral) {
-  const deviceInfo = getDeviceInformation(peripheral.advertisement);
-
-  const accessoryInformation = await executor.execute(new RetrieveDeviceInformationTask());
-  accessoryInformation.model = deviceInfo.type;
-  accessoryInformation.firmwareRevision = extractVersion(accessoryInformation.firmwareRevision);
-  accessoryInformation.hardwareRevision = extractVersion(accessoryInformation.hardwareRevision);
-
-  return new FlowerPowerDevice(executor, peripheral, deviceInfo, accessoryInformation);
+  const device = new FlowerPowerDevice(executor, peripheral);
+  await device._initialize();
+  return device;
 }
 
 module.exports = {

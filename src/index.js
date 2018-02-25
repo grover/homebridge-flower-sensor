@@ -54,6 +54,8 @@ const FlowerSensorPlatform = class {
     this._bleBrowser.on('discovered', this._onBleDeviceDiscovered.bind(this));
     this._bleBrowser.start();
 
+    this._bleExecutor = new BleExecutor(this._bleBrowser);
+
     this.api.on('didFinishLaunching', this._didFinishLaunching.bind(this));
   }
 
@@ -87,12 +89,10 @@ const FlowerSensorPlatform = class {
     this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
     let device = this._devices[peripheral.id];
     if (device === undefined) {
-      this.log('Creating executor');
-      const executor = new BleExecutor(peripheral, this._bleBrowser);
       this._devices[peripheral.id] = null;
 
       this.log('Creating device');
-      device = await DeviceFactory.createDevice(executor, peripheral);
+      device = await DeviceFactory.createDevice(this._bleExecutor, peripheral);
       this._devices[peripheral.id] = device;
 
       this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
