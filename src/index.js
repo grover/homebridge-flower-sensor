@@ -11,7 +11,7 @@ const WateringServiceTypes = require('./hap/WateringServiceTypes');
 const BleBrowser = require('./ble/BleBrowser');
 const BleExecutor = require('./ble/BleExecutor');
 
-const FlowerPower = require('./parrot/FlowerPower');
+const DeviceFactory = require('./DeviceFactory');
 
 const FlowerPowerSensor = require('./FlowerPowerSensor');
 
@@ -75,11 +75,11 @@ const FlowerSensorPlatform = class {
   }
 
   async _onBleDeviceDiscovered(peripheral) {
-    if (!FlowerPower.isFlowerPowerAdvertisement(peripheral.advertisement)) {
+    if (!DeviceFactory.isSupportedDevice(peripheral.advertisement)) {
       return;
     }
 
-    this.log(`Found flower power sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
+    this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
     let device = this._devices[peripheral.id];
     if (device === undefined) {
       this.log('Creating executor');
@@ -87,7 +87,7 @@ const FlowerSensorPlatform = class {
       this._devices[peripheral.id] = null;
 
       this.log('Creating device');
-      device = await FlowerPower.createDevice(executor, peripheral);
+      device = await DeviceFactory.createDevice(executor, peripheral);
       this._devices[peripheral.id] = device;
 
       const sensorConfig = this._findConfigurationForPeripheral(peripheral.advertisement.localName);
