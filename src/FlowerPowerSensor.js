@@ -6,6 +6,7 @@ const BatteryService = require('./services/BatteryService');
 const PlantService = require('./services/PlantService');
 const StatusService = require('./services/StatusService');
 const RecommendationService = require('./services/RecommendationService');
+const WateringService = require('./services/WateringService');
 
 class FlowerPowerSensor {
   constructor(api, log, config, device) {
@@ -29,7 +30,8 @@ class FlowerPowerSensor {
       ...this._createBatteryService(),
       ...this._createPlantService(),
       ...this._createStatusService(),
-      ...this._createRecommendationService()
+      ...this._createRecommendationService(),
+      ...this._createWateringService()
     ];
   }
 
@@ -79,6 +81,15 @@ class FlowerPowerSensor {
 
     this._recommendationService = new RecommendationService(this.log, this.api, this.name, this._device, this._config);
     return this._recommendationService.getServices();
+  }
+
+  _createWateringService() {
+    if (!this._device.getCapabilities().waterTank) {
+      return [];
+    }
+
+    this._wateringService = new WateringService(this.log, this.api, this.name, this._device);
+    return this._wateringService.getServices();
   }
 
   getServices() {

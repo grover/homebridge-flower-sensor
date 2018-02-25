@@ -6,6 +6,7 @@ const noble = require('noble');
 
 const RecommendationServiceTypes = require('./hap/RecommendationServiceTypes');
 const StatusServiceTypes = require('./hap/StatusServiceTypes');
+const WateringServiceTypes = require('./hap/WateringServiceTypes');
 
 const BleBrowser = require('./ble/BleBrowser');
 const BleExecutor = require('./ble/BleExecutor');
@@ -33,6 +34,7 @@ module.exports = (homebridge) => {
 
   RecommendationServiceTypes.registerWith(homebridge.hap);
   StatusServiceTypes.registerWith(homebridge.hap);
+  WateringServiceTypes.registerWith(homebridge.hap);
 
   homebridge.registerPlatform(platformName, platformPrettyName, FlowerSensorPlatform, false);
 };
