@@ -5,6 +5,8 @@ const util = require('util');
 const debug = require('debug')('flower:ble');
 const SequentialTaskQueue = require('sequential-task-queue').SequentialTaskQueue;
 
+const BleUtils = require('./BleUtils');
+
 const MAX_RETRIES = 3;
 
 class BleExecutor {
@@ -43,6 +45,10 @@ class BleExecutor {
         }
         catch (e) {
           errors.push(e);
+
+          await new Promise(resolve => {
+            this._peripheral.disconnect(resolve);
+          });
         }
       }
 
@@ -68,8 +74,7 @@ class BleExecutor {
      * See https://github.com/sandeepmistry/noble/issues/465
      * 
      */
-
-    // TODO: Stop/Resume scanning
+    debug(`Connecting to ${this._name}`);
 
     for (let n = 0; n < 3 && this._peripheral.state !== 'connected'; n++) {
       await this._connectToDevice();
@@ -86,15 +91,18 @@ class BleExecutor {
   }
 
   _connectToDevice() {
-    return new Promise((resolve, reject) => {
-      this._peripheral.connect((error) => {
-        if (error) {
-          reject(error);
-        }
+    return Promise.race([
+      new Promise((resolve, reject) => {
+        this._peripheral.connect((error) => {
+          if (error) {
+            reject(error);
+          }
 
-        resolve();
-      });
-    });
+          resolve();
+        });
+      }),
+      BleUtils.createTimeoutPromise(2000)
+    ]);
   }
 
   _sleep(timeout) {
