@@ -79,6 +79,11 @@ const FlowerSensorPlatform = class {
       return;
     }
 
+    const sensorConfig = this._findConfigurationForPeripheral(peripheral.advertisement.localName);
+    if (!sensorConfig) {
+      return;
+    }
+
     this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
     let device = this._devices[peripheral.id];
     if (device === undefined) {
@@ -90,16 +95,10 @@ const FlowerSensorPlatform = class {
       device = await DeviceFactory.createDevice(executor, peripheral);
       this._devices[peripheral.id] = device;
 
-      const sensorConfig = this._findConfigurationForPeripheral(peripheral.advertisement.localName);
-      if (sensorConfig) {
-        this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
-        const accessory = await this._createAccessory(device, sensorConfig);
-        this._accessories.push(accessory);
-        this._tryToPublish();
-      }
-      else {
-        this.log(`No device configured for ${util.inspect(peripheral)}`);
-      }
+      this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
+      const accessory = await this._createAccessory(device, sensorConfig);
+      this._accessories.push(accessory);
+      this._tryToPublish();
     }
     else if (device !== null) {
       device.newAdvertisement(peripheral.advertisement);
