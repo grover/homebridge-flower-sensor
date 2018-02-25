@@ -63,7 +63,7 @@ function getDeviceStatus(manufacturerData) {
   const UNREAD_ENTRIES_MASK = 0x01;
   const DEVICE_MOVED_MASK = 0x02;
   const DEVICE_STARTED_MASK = 0x04;
-  const DEVICE_LOW_WATER_MASK = 0x08;
+  const DEVICE_LOW_WATER_MASK = 0x08; // Tank low water
   const DEVICE_LOW_BATTERY_MASK = 0x10;
   const DEVICE_WATERING_NEEDED_MASK = 0x20;
 
