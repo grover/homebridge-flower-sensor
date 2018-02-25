@@ -109,5 +109,7 @@ module.exports = {
   readString: readString,
   readUInt8: readUInt8,
 
-  writeCharacteristic: writeCharacteristic
+  writeCharacteristic: writeCharacteristic,
+
+  createTimeoutPromise: createTimeoutPromise
 };
