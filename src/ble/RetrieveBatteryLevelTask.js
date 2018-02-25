@@ -1,24 +1,13 @@
-
 'use strict';
-
-const debug = require('debug')('flower:ble');
-
-const BleUtils = require('./BleUtils');
 
 class RetrieveBatteryLevelTask {
   constructor() {
   }
 
-  async execute(peripheral) {
-    const [service] = await BleUtils.discoverServices(peripheral, ['180f']);
-    debug('Discovered battery level service');
-
-    const [level] =
-      await BleUtils.discoverCharacteristics(service, ['2a19']);
-    debug('Discovered level characteristic');
-
+  async execute(device) {
+    const level = await device.readCharacteristic('2a19', Buffer.from([0]));
     return {
-      level: await BleUtils.readUInt8(level)
+      level: level.readUInt8()
     };
   }
 }

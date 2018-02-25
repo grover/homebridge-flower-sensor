@@ -26,7 +26,7 @@ class BleExecutor {
           try {
             await this._connectToDevice(device);
 
-            const result = await task.execute(device.peripheral);
+            const result = await task.execute(device);
             return result;
           }
           catch (e) {

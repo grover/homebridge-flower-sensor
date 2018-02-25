@@ -1,44 +1,26 @@
 
 'use strict';
 
-const debug = require('debug')('flower:ble');
-
-const BleUtils = require('../ble/BleUtils');
-
-const FLOWER_POWER_LIVE_SERVICE_UUID = '39e1fa0084a811e2afba0002a5d5c51b';
-
-/** 
- * Must keep these sorted as they're used sorted.
- */
-const LiveCharacteristics = [
-  '39e1fa0384a811e2afba0002a5d5c51b', // FLOWER_POWER_SOIL_TEMP_CHARACTERISTIC_UUID (not calibrated)
-  '39e1fa0984a811e2afba0002a5d5c51b', // FLOWER_POWER_SOIL_VWC_CHARACTERISTIC_UUID
-  '39e1fa0a84a811e2afba0002a5d5c51b', // FLOWER_POWER_AIR_TEMP_CHARACTERISTIC_UUID
-  '39e1fa0b84a811e2afba0002a5d5c51b', // FLOWER_POWER_LIGHT_LEVEL_CHARACTERISTIC_UUID
-];
+const FLOWER_POWER_SOIL_TEMP_CHARACTERISTIC_UUID = '39e1fa0384a811e2afba0002a5d5c51b';
+const FLOWER_POWER_SOIL_VWC_CHARACTERISTIC_UUID = '39e1fa0984a811e2afba0002a5d5c51b';
+const FLOWER_POWER_AIR_TEMP_CHARACTERISTIC_UUID = '39e1fa0a84a811e2afba0002a5d5c51b';
+const FLOWER_POWER_LIGHT_LEVEL_CHARACTERISTIC_UUID = '39e1fa0b84a811e2afba0002a5d5c51b';
 
 class RetrieveFlowerPowerCalibratedDataTask {
   constructor() {
   }
 
-  async execute(peripheral) {
-    const [service] = await BleUtils.discoverServices(peripheral, [FLOWER_POWER_LIVE_SERVICE_UUID]);
-    debug('Discovered flower power live service');
-
-    const [soilTemp, soilMoisture, airTemp, lightLevel] =
-      await BleUtils.discoverCharacteristics(service, LiveCharacteristics);
-    debug('Discovered characteristics');
-
-    const rawSoilTemp = await BleUtils.readCharacteristic(soilTemp);
-    const rawSoilMoisture = await BleUtils.readCharacteristic(soilMoisture);
-    const rawAirTemp = await BleUtils.readCharacteristic(airTemp);
-    const rawLightLevel = await BleUtils.readCharacteristic(lightLevel);
+  async execute(device) {
+    const lightLevel = await device.readCharacteristic(FLOWER_POWER_LIGHT_LEVEL_CHARACTERISTIC_UUID);
+    const soilTemperature = await device.readCharacteristic(FLOWER_POWER_SOIL_TEMP_CHARACTERISTIC_UUID);
+    const airTemperature = await device.readCharacteristic(FLOWER_POWER_AIR_TEMP_CHARACTERISTIC_UUID);
+    const soilMoisture = await device.readCharacteristic(FLOWER_POWER_SOIL_VWC_CHARACTERISTIC_UUID);
 
     return {
-      lightLevel: rawLightLevel.readFloatLE(0),
-      soilTemperature: this._convertTemperatureData(rawSoilTemp),
-      airTemperature: rawAirTemp.readFloatLE(0),
-      soilMoisture: rawSoilMoisture.readFloatLE(0),
+      lightLevel: lightLevel.readFloatLE(0),
+      soilTemperature: this._convertTemperatureData(soilTemperature),
+      airTemperature: airTemperature.readFloatLE(0),
+      soilMoisture: soilMoisture.readFloatLE(0),
     };
   }
 
