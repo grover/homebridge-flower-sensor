@@ -4,6 +4,8 @@ const util = require('util');
 
 const noble = require('noble');
 
+const SequentialTaskQueue = require('sequential-task-queue').SequentialTaskQueue;
+
 const RecommendationServiceTypes = require('./hap/RecommendationServiceTypes');
 const StatusServiceTypes = require('./hap/StatusServiceTypes');
 const WateringServiceTypes = require('./hap/WateringServiceTypes');
@@ -56,6 +58,8 @@ const FlowerSensorPlatform = class {
 
     this._bleExecutor = new BleExecutor(this._bleBrowser);
 
+    this._queue = new SequentialTaskQueue();
+
     this.api.on('didFinishLaunching', this._didFinishLaunching.bind(this));
   }
 
@@ -76,7 +80,7 @@ const FlowerSensorPlatform = class {
     this._tryToPublish();
   }
 
-  async _onBleDeviceDiscovered(peripheral) {
+  _onBleDeviceDiscovered(peripheral) {
     if (!DeviceFactory.isSupportedDevice(peripheral.advertisement)) {
       return;
     }
@@ -89,25 +93,33 @@ const FlowerSensorPlatform = class {
     this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
     let device = this._devices[peripheral.id];
     if (device === undefined) {
-      this._devices[peripheral.id] = null;
-
-      this.log('Creating device');
-      try {
-        device = await DeviceFactory.createDevice(this._bleExecutor, peripheral);
-        this._devices[peripheral.id] = device;
-
-        this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
-        const accessory = await this._createAccessory(device, sensorConfig);
-        this._accessories.push(accessory);
-        this._tryToPublish();
-      }
-      catch (e) {
-        this.log(`Failed to create device: ${util.inspect(e)}`);
-        this._devices[peripheral.id] = undefined;
-      }
+      this._queue.push(this._createDevice.bind(this, peripheral, sensorConfig));
     }
-    else if (device !== null) {
+    else {
       device.newAdvertisement(peripheral.advertisement);
+    }
+  }
+
+  async _createDevice(peripheral, sensorConfig) {
+    let device = this._devices[peripheral.id];
+    if (device !== undefined) {
+      // Might've already been created
+      return;
+    }
+
+    this.log('Creating device');
+    try {
+      device = await DeviceFactory.createDevice(this._bleExecutor, peripheral);
+      this._devices[peripheral.id] = device;
+
+      this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
+      const accessory = await this._createAccessory(device, sensorConfig);
+      this._accessories.push(accessory);
+      this._tryToPublish();
+    }
+    catch (e) {
+      this.log(`Failed to create device: ${util.inspect(e)}`);
+      this._devices[peripheral.id] = undefined;
     }
   }
 
