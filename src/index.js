@@ -92,13 +92,19 @@ const FlowerSensorPlatform = class {
       this._devices[peripheral.id] = null;
 
       this.log('Creating device');
-      device = await DeviceFactory.createDevice(this._bleExecutor, peripheral);
-      this._devices[peripheral.id] = device;
+      try {
+        device = await DeviceFactory.createDevice(this._bleExecutor, peripheral);
+        this._devices[peripheral.id] = device;
 
-      this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
-      const accessory = await this._createAccessory(device, sensorConfig);
-      this._accessories.push(accessory);
-      this._tryToPublish();
+        this.log(`Creating accessory for device: ${peripheral.advertisement.localName}`);
+        const accessory = await this._createAccessory(device, sensorConfig);
+        this._accessories.push(accessory);
+        this._tryToPublish();
+      }
+      catch (e) {
+        this.log(`Failed to create device: ${util.inspect(e)}`);
+        this._devices[peripheral.id] = undefined;
+      }
     }
     else if (device !== null) {
       device.newAdvertisement(peripheral.advertisement);
