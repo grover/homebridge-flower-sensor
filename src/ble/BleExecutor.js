@@ -9,11 +9,13 @@ const MAX_RETRIES = 3;
 
 class BleExecutor {
 
-  constructor(peripheral) {
+  constructor(peripheral, browser) {
     this._peripheral = peripheral;
     this._peripheral
       .on('connected', this._onConnected.bind(this))
       .on('disconnected', this._onDisconnected.bind(this));
+
+    this._browser = browser;
 
     this._isConnected = false;
     this._name = this._peripheral.advertisement.localName;
@@ -22,6 +24,8 @@ class BleExecutor {
   }
 
   execute(task) {
+    this._browser.suspend();
+
     return this._queue.push(async () => {
 
       const errors = [];
@@ -33,12 +37,16 @@ class BleExecutor {
           }
 
           const result = await task.execute(this._peripheral);
+          this._browser.resume();
+
           return result;
         }
         catch (e) {
           errors.push(e);
         }
       }
+
+      this._browser.resume();
 
       const error = new Error('Failed to execute task');
       error.task = task;

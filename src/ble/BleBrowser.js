@@ -9,7 +9,9 @@ class BleBrowser extends EventEmitter {
 
     this.log = log;
     this.noble = noble;
+
     this._isScanning = false;
+    this._suspended = 0;
 
     this.noble.on('stateChange', this._onNobleStateChanged.bind(this));
     this.noble.on('discover', this._onBleDeviceDiscovered.bind(this));
@@ -18,29 +20,51 @@ class BleBrowser extends EventEmitter {
 
   start() {
     if (this._isScanning === false) {
-      this.log('Starting to scan for flower sensors');
       this._scan();
       this._isScanning = true;
     }
   }
 
   _scan() {
-    if (this.noble.state === 'poweredOn') {
+    if (this.noble.state === 'poweredOn' && this._isScanning === true && this._suspended === 0) {
+      this.log('Starting to scan for flower sensors');
       this.noble.startScanning([], true);
     }
   }
 
   stop() {
     if (this._isScanning) {
+      this._stop();
+      this._isScanning = false;
+    }
+  }
+
+  _stop() {
+    if (this._isScanning) {
       this.log('Stopped to scan for BLE HomeKit accessories');
       this.noble.stopScanning();
     }
   }
 
-  _onNobleStateChanged(state) {
-    if (state === 'poweredOn' && this._isScanning) {
-      this._scan();
+
+  suspend() {
+    this._suspended++;
+    this.log(`Suspending BLE discovery: suspended=${this._suspended}`);
+    if (this._suspended === 1) {
+      this._stop();
     }
+  }
+
+  resume() {
+    this._suspended--;
+    this.log(`Resumed BLE discovery: suspended=${this._suspended}`);
+    if (this._suspended === 0) {
+      setTimeout(() => this._scan(), 1000);
+    }
+  }
+
+  _onNobleStateChanged() {
+    this._scan();
   }
 
   _onBleDeviceDiscovered(peripheral) {
@@ -57,13 +81,9 @@ class BleBrowser extends EventEmitter {
      */
     const DelayScanRestart = 2000;
 
-    if (this._isScanning) {
+    if (this._isScanning && this._suspended === 0) {
       this.log(`Scanning stopped externally. Restarting in ${DelayScanRestart / 1000}s.`);
-      setTimeout(() => {
-        if (this._isScanning) {
-          this._scan();
-        }
-      }, DelayScanRestart);
+      setTimeout(() => this._scan(), DelayScanRestart);
     }
   }
 }

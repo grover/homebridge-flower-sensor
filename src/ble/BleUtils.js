@@ -5,31 +5,37 @@ const util = require('util');
 const debug = require('debug')('flower:ble');
 
 function discoverServices(peripheral, serviceUuids) {
-  return new Promise((resolve, reject) => {
-    peripheral.discoverServices(serviceUuids, (error, services) => {
-      if (error) {
-        debug('Failed to discover the device information service.');
-        reject(error);
-        return;
-      }
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      peripheral.discoverServices(serviceUuids, (error, services) => {
+        if (error) {
+          debug('Failed to discover the device information service.');
+          reject(error);
+          return;
+        }
 
-      resolve(services);
-    });
-  });
+        resolve(services);
+      });
+    }),
+    createTimeoutPromise(3000)
+  ]);
 }
 
 function discoverCharacteristics(service, characteristics) {
-  return new Promise((resolve, reject) => {
-    service.discoverCharacteristics(characteristics, (error, result) => {
-      if (error) {
-        debug('Failed to discover the characteristics for the device information service.');
-        reject(error);
-        return;
-      }
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      service.discoverCharacteristics(characteristics, (error, result) => {
+        if (error) {
+          debug('Failed to discover the characteristics for the device information service.');
+          reject(error);
+          return;
+        }
 
-      resolve(result);
-    });
-  });
+        resolve(result);
+      });
+    }),
+    createTimeoutPromise(3000)
+  ]);
 }
 
 function createTimeoutPromise(timeout) {
