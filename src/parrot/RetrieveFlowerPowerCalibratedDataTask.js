@@ -1,6 +1,6 @@
-
 'use strict';
 
+const FLOWER_POWER_SOIL_EC_CHARACTERISTIC_UUID = '39e1fa0284a811e2afba0002a5d5c51b';
 const FLOWER_POWER_SOIL_TEMP_CHARACTERISTIC_UUID = '39e1fa0384a811e2afba0002a5d5c51b';
 const FLOWER_POWER_SOIL_VWC_CHARACTERISTIC_UUID = '39e1fa0984a811e2afba0002a5d5c51b';
 const FLOWER_POWER_AIR_TEMP_CHARACTERISTIC_UUID = '39e1fa0a84a811e2afba0002a5d5c51b';
@@ -11,12 +11,14 @@ class RetrieveFlowerPowerCalibratedDataTask {
   }
 
   async execute(device) {
+    const soilEc = await device.readCharacteristic(FLOWER_POWER_SOIL_EC_CHARACTERISTIC_UUID);
     const lightLevel = await device.readCharacteristic(FLOWER_POWER_LIGHT_LEVEL_CHARACTERISTIC_UUID);
     const soilTemperature = await device.readCharacteristic(FLOWER_POWER_SOIL_TEMP_CHARACTERISTIC_UUID);
     const airTemperature = await device.readCharacteristic(FLOWER_POWER_AIR_TEMP_CHARACTERISTIC_UUID);
     const soilMoisture = await device.readCharacteristic(FLOWER_POWER_SOIL_VWC_CHARACTERISTIC_UUID);
 
     return {
+      soilEc: soilEc.readUInt16LE(),
       lightLevel: lightLevel.readFloatLE(0),
       soilTemperature: this._convertTemperatureData(soilTemperature),
       airTemperature: airTemperature.readFloatLE(0),

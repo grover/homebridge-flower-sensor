@@ -1,4 +1,3 @@
-
 'use strict';
 
 const LAST_MOVE_DATE_UUID = '39e1fa0884a811e2afba0002a5d5c51b';

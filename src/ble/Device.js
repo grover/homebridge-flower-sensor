@@ -35,6 +35,7 @@ class Device extends EventEmitter {
 
           if (this._characteristics !== undefined) {
             resolve();
+            return;
           }
 
           this._discover()
