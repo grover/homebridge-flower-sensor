@@ -2,7 +2,7 @@
 
 const WaterPlantTask = require('../parrot/WaterPlantTask');
 
-let On, WaterLevel;
+let ContactSensorState, On, WaterLevel, WateringMode, WateringStatus;
 
 class WateringService {
 
@@ -11,8 +11,11 @@ class WateringService {
     this.name = name;
     this._device = device;
 
+    ContactSensorState = api.hap.Characteristic.ContactSensorState;
     On = api.hap.Characteristic.On;
     WaterLevel = api.hap.Characteristic.WaterLevel;
+    WateringMode = api.hap.Characteristic.WateringMode;
+    WateringStatus = api.hap.Characteristic.WateringStatus;
 
     this._createService(api.hap);
 
@@ -29,20 +32,40 @@ class WateringService {
       .on('set', this._waterPlant.bind(this))
       .updateValue(false)
       .displayName = 'Water Plant';
+
+    this._wateringError = new hap.Service.ContactSensor(`${this.name} Watering Error`, 'watering-error');
   }
 
   getServices() {
-    return [this._wateringService, this._waterPlantSwitch];
+    return [this._wateringService, this._waterPlantSwitch, this._wateringError];
   }
 
-  _onDeviceStatusChanged(/*deviceStatus*/) {
-    // TODO: Look at the watering related flags
+  _onDeviceStatusChanged(deviceStatus) {
+    if (deviceStatus.lowWater === true) {
+      this._device.requestWateringStatus();
+    }
   }
 
   _onWateringData(wateringStatus) {
-    this._wateringService
-      .getCharacteristic(WaterLevel)
+    this._wateringService.getCharacteristic(WaterLevel)
       .updateValue(wateringStatus.waterLevel);
+
+    this._wateringService.getCharacteristic(WateringMode)
+      .updateValue(wateringStatus.wateringMode);
+
+    this._wateringService.getCharacteristic(WateringStatus)
+      .updateValue(wateringStatus.wateringStatus);
+
+    this._updateSensor(this._wateringError, wateringStatus.hasWateringError);
+  }
+
+  _updateSensor(sensor, state) {
+    const value = state
+      ? ContactSensorState.CONTACT_NOT_DETECTED
+      : ContactSensorState.CONTACT_DETECTED;
+
+    sensor.getCharacteristic(ContactSensorState)
+      .updateValue(value);
   }
 
   async _waterPlant(value, callback) {
