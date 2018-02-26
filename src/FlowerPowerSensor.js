@@ -21,6 +21,8 @@ class FlowerPowerSensor {
     this._device = device;
 
     this._services = this._createServices();
+
+    this._device.refresh();
   }
 
   _createServices() {

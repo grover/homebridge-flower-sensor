@@ -97,8 +97,11 @@ class FlowerPowerDevice extends Device {
   }
 
   async _initialize() {
-    await this._retrieveBatteryStatus();
     await this._requestAccessoryInformation();
+  }
+
+  async refresh() {
+    await this._retrieveBatteryStatus();
     await this._retrieveTimestamps();
     await this.requestSensorData();
   }
