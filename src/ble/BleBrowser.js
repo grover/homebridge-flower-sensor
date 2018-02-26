@@ -10,6 +10,7 @@ class BleBrowser extends EventEmitter {
     this.log = log;
     this.noble = noble;
 
+    this._shouldScan = false;
     this._isScanning = false;
     this._suspended = 0;
 
@@ -19,23 +20,24 @@ class BleBrowser extends EventEmitter {
   }
 
   start() {
-    if (this._isScanning === false) {
+    if (this._shouldScan === false) {
       this._scan();
-      this._isScanning = true;
+      this._shouldScan = true;
     }
   }
 
   _scan() {
-    if (this.noble.state === 'poweredOn' && this._isScanning === true && this._suspended === 0) {
+    if (this.noble.state === 'poweredOn' && this._shouldScan === true && this._suspended === 0 && this._isScanning === false) {
       this.log('Starting to scan for flower sensors');
       this.noble.startScanning([], true);
+      this._isScanning = true;
     }
   }
 
   stop() {
-    if (this._isScanning) {
+    if (this._shouldScan) {
+      this._shouldScan = false;
       this._stop();
-      this._isScanning = false;
     }
   }
 
@@ -43,6 +45,7 @@ class BleBrowser extends EventEmitter {
     if (this._isScanning) {
       this.log('Stopped scanning for BLE HomeKit accessories');
       this.noble.stopScanning();
+      this._isScanning = false;
     }
   }
 
@@ -81,7 +84,7 @@ class BleBrowser extends EventEmitter {
      */
     const DelayScanRestart = 2000;
 
-    if (this._isScanning && this._suspended === 0) {
+    if (this._shouldScan === true && this._isScanning === true && this._suspended === 0) {
       this.log(`Scanning stopped externally. Restarting in ${DelayScanRestart / 1000}s.`);
       setTimeout(() => this._scan(), DelayScanRestart);
     }
