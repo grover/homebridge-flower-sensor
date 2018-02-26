@@ -1,6 +1,8 @@
 'use strict';
 
-let WaterLevel;
+const WaterPlantTask = require('../parrot/WaterPlantTask');
+
+let On, WaterLevel;
 
 class WateringService {
 
@@ -9,6 +11,7 @@ class WateringService {
     this.name = name;
     this._device = device;
 
+    On = api.hap.Characteristic.On;
     WaterLevel = api.hap.Characteristic.WaterLevel;
 
     this._createService(api.hap);
@@ -20,23 +23,47 @@ class WateringService {
 
   _createService(hap) {
     this._wateringService = new hap.Service.WateringService(this.name);
+
+    this._waterPlantSwitch = new hap.Service.Switch(`${this.name} Watering`);
+    this._waterPlantSwitch.getCharacteristic(On)
+      .on('set', this._waterPlant.bind(this))
+      .updateValue(false)
+      .displayName = 'Water Plant';
   }
 
   getServices() {
-    return [this._wateringService];
+    return [this._wateringService, this._waterPlantSwitch];
   }
 
   _onDeviceStatusChanged(/*deviceStatus*/) {
-    // New entries, moved or started means we should refresh
-    // if (deviceStatus.moved || deviceStatus.started) {
-    //   this._device.requestSensorData();
-    // }
+    // TODO: Look at the watering related flags
   }
 
   _onWateringData(wateringStatus) {
     this._wateringService
       .getCharacteristic(WaterLevel)
       .updateValue(wateringStatus.waterLevel);
+  }
+
+  async _waterPlant(value, callback) {
+    if (!value) {
+      callback();
+    }
+
+    try {
+      await this._device.execute(new WaterPlantTask());
+
+      setTimeout(this._resetWaterPlantSwitch.bind(this), 1000);
+      callback();
+    }
+    catch (e) {
+      callback(e);
+    }
+  }
+
+  _resetWaterPlantSwitch() {
+    this._waterPlantSwitch.getCharacteristic(On)
+      .updateValue(false);
   }
 }
 
