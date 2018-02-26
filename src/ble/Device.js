@@ -85,11 +85,11 @@ class Device extends EventEmitter {
   }
 
   _onConnected() {
-    this.log(`Connected`);
+    this.log('Connected');
   }
 
   _onDisconnected() {
-    this.log(`Disconnected`);
+    this.log('Disconnected');
     this._characteristics = undefined;
   }
 
@@ -101,6 +101,7 @@ class Device extends EventEmitter {
         if (!characteristic) {
           this.log(`Characteristic ${uuid} not available. Returning default value.`);
           resolve(defaultValue);
+          return;
         }
 
         characteristic.read((error, data) => {
@@ -123,7 +124,7 @@ class Device extends EventEmitter {
   writeCharacteristic(uuid, value) {
     return Promise.race([
       new Promise((resolve, reject) => {
-        this.log(`Writing ${value} to ${uuid}`);
+        this.log(`Writing ${util.inspect(value)} to ${uuid}`);
 
         const characteristic = this._characteristics.find(c => c.uuid === uuid);
         if (!characteristic) {
