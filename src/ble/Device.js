@@ -14,10 +14,12 @@ class Device extends EventEmitter {
 
     this._executor = executor;
 
+    this._characteristics = undefined;
+
     this.peripheral = peripheral;
     this.peripheral
-      .on('connected', this._onConnected.bind(this))
-      .on('disconnected', this._onDisconnected.bind(this));
+      .on('connect', this._onConnected.bind(this))
+      .on('disconnect', this._onDisconnected.bind(this));
   }
 
   isConnected() {
@@ -30,11 +32,6 @@ class Device extends EventEmitter {
         this.peripheral.connect((error) => {
           if (error) {
             reject(error);
-            return;
-          }
-
-          if (this._characteristics !== undefined) {
-            resolve();
             return;
           }
 
@@ -79,7 +76,7 @@ class Device extends EventEmitter {
           resolve();
         });
       }),
-      BleUtils.createTimeoutPromise(2000)
+      BleUtils.createTimeoutPromise(15000)
     ]);
   }
 
@@ -88,11 +85,12 @@ class Device extends EventEmitter {
   }
 
   _onConnected() {
-    this.log(`Connected to ${this._name}`);
+    this.log(`Connected`);
   }
 
   _onDisconnected() {
-    this.log(`Disconnected from ${this._name}`);
+    this.log(`Disconnected`);
+    this._characteristics = undefined;
   }
 
   readCharacteristic(uuid, defaultValue) {
@@ -118,7 +116,7 @@ class Device extends EventEmitter {
           resolve(value);
         });
       }),
-      BleUtils.createTimeoutPromise(3000)
+      BleUtils.createTimeoutPromise(5000)
     ]);
   }
 
@@ -148,7 +146,7 @@ class Device extends EventEmitter {
           resolve();
         });
       }),
-      BleUtils.createTimeoutPromise(3000)
+      BleUtils.createTimeoutPromise(10000)
     ]);
   }
 }
