@@ -93,6 +93,11 @@ a Cambridge Silicon Radio CSR8510A10 chip has worked well for me. Unfortunately
 that means that the Broadcom Bluetooth chip in recent Raspberry Pi 3/Zero W
 models does not work well with the Parrot devices.
 
+### Disable Raspberry Pi onboard bluetooth
+
+It is advised to disable the Broadcom integrated Bluetooth module. Good 
+instructions for that can be found at the [Raspberry Pi Firmware Repository](https://github.com/raspberrypi/firmware/blob/master/boot/overlays/README).
+
 ## Install noble dependencies
 
 Install the noble dependencies for Raspbian by executing the commands:
