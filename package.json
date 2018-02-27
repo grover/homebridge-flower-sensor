@@ -1,6 +1,6 @@
 {
   "name": "homebridge-flower-sensor",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Use HomeKit to monitor your plants with homebridge",
   "main": "src/index.js",
   "scripts": {
