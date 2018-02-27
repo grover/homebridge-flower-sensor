@@ -90,9 +90,9 @@ const FlowerSensorPlatform = class {
       return;
     }
 
-    this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
     let device = this._devices[peripheral.id];
     if (device === undefined) {
+      this.log(`Found sensor "${peripheral.advertisement.localName}". Manufacturer Data: ${util.inspect(peripheral.advertisement.manufacturerData)}.`);
       this._queue.push(this._createDevice.bind(this, peripheral, sensorConfig));
     }
     else {
