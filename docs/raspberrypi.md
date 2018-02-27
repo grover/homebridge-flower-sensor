@@ -88,12 +88,10 @@ connections to your accessories:
 - [Noble #480](https://github.com/noble/noble/issues/480)
 - [Noble #474](https://github.com/noble/noble/issues/474)
 
-The install script downloads a version of noble, which is supposed to circumvent
-the issues. At the end connections to accessories work, sometimes you'll still
-see immediate disconnects. Please restart homebridge if you see those issues.
-
-I'm working on it. My recommendation at the moment is to report the issues in the
-noble project.
+It also does not seem to be the fault of noble. Using a USB Bluetooth Dongle with 
+a Cambridge Silicon Radio CSR8510A10 chip has worked well for me. Unfortunately
+that means that the Broadcom Bluetooth chip in recent Raspberry Pi 3/Zero W
+models does not work well with the Parrot devices.
 
 ## Install noble dependencies
 

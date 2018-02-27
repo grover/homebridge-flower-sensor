@@ -27,7 +27,7 @@ class BleBrowser extends EventEmitter {
   }
 
   _scan() {
-    if (this.noble.state === 'poweredOn' && this._shouldScan === true && this._suspended === 0 && this._isScanning === false) {
+    if (this._nobleState === 'poweredOn' && this._shouldScan === true && this._suspended === 0 && this._isScanning === false) {
       this.log('Starting to scan for flower sensors');
       this.noble.startScanning([], true);
       this._isScanning = true;
@@ -66,7 +66,8 @@ class BleBrowser extends EventEmitter {
     }
   }
 
-  _onNobleStateChanged() {
+  _onNobleStateChanged(nobleState) {
+    this._nobleState = nobleState;
     this._scan();
   }
 
